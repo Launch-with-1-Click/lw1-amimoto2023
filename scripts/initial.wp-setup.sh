@@ -32,6 +32,7 @@ ANSIBLE_PATH="/opt/local/ansible"
 ## ensure directories
 [ ! -d /var/www/vhosts/${SERVERNAME} ] && \
   /bin/mkdir -p /var/www/vhosts/${SERVERNAME}
+/bin/chown -R amimoto-user:www /var/www/vhosts/${SERVERNAME}
 [ ! -d /etc/nginx/vhosts.d ] && \
   /bin/mkdir -p /etc/nginx/vhosts.d
 
