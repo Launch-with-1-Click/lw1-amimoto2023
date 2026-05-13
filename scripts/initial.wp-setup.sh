@@ -94,6 +94,15 @@ mkdir -p /var/log/amimoto
 ## install WordPress
 WP_CLI="/usr/local/bin/wp"
 
+## create database and user (root via unix_socket)
+DB_NAME="wp_$(echo ${SERVERNAME} | tr '-' '_' | cut -c1-16)"
+DB_USER="wp_$(echo ${SERVERNAME} | tr '-' '_' | cut -c1-13)"
+DB_PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+
+mariadb -u root -e "CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;" 2>/dev/null || true
+mariadb -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';" 2>/dev/null || true
+mariadb -u root -e "GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'localhost'; FLUSH PRIVILEGES;" 2>/dev/null || true
+
 cd /var/www/vhosts/${SERVERNAME}
 if ! ${WP_CLI} --allow-root core is-installed --path=/var/www/vhosts/${SERVERNAME} 2>/dev/null; then
   # download WordPress
@@ -101,13 +110,11 @@ if ! ${WP_CLI} --allow-root core is-installed --path=/var/www/vhosts/${SERVERNAM
 
   # generate wp-config.php
   sudo -u amimoto-user ${WP_CLI} config create \
-    --dbname="${SERVERNAME}" \
-    --dbuser="root" \
+    --dbname="${DB_NAME}" \
+    --dbuser="${DB_USER}" \
+    --dbpass="${DB_PASS}" \
     --dbhost="localhost" \
     --path=/var/www/vhosts/${SERVERNAME}
-
-  # create database (root for unix_socket auth)
-  ${WP_CLI} --allow-root db create --path=/var/www/vhosts/${SERVERNAME} 2>/dev/null || true
 
   # determine URL
   if [ -n "${PUBLIC_IPV4}" ] && ! echo "${PUBLIC_IPV4}" | grep -q "Not Found"; then
