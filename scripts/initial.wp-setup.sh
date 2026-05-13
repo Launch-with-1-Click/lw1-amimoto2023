@@ -67,6 +67,7 @@ IMDS_TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-
 IMDS_HEADER="X-aws-ec2-metadata-token: ${IMDS_TOKEN}"
 AZ=$(curl -s -H "${IMDS_HEADER}" http://169.254.169.254/latest/meta-data/placement/availability-zone)
 REGION=$(echo ${AZ} | sed -e 's/[a-z]$//')
+INSTANCEID=$(curl -s -H "${IMDS_HEADER}" http://169.254.169.254/latest/meta-data/instance-id)
 ANSIBLE_PATH="/opt/local/ansible"
 
 if [ -d "${ANSIBLE_PATH}/.git" ]; then
@@ -75,7 +76,8 @@ fi
 /usr/bin/ansible-playbook \
   -i ${ANSIBLE_PATH}/ansible/inventory/hosts.ini \
   ${ANSIBLE_PATH}/ansible/site.yml \
-  -e "amimoto_ec2_region=${REGION}" 2>&1 | tee -a /var/log/amimoto/provision.log
+  -e "amimoto_ec2_region=${REGION}" \
+  -e "amimoto_wordpress_servername=${INSTANCEID}" 2>&1 | tee -a /var/log/amimoto/provision.log
 EOS
 chmod +x /opt/local/provision
 
@@ -88,7 +90,8 @@ mkdir -p /var/log/amimoto
 /usr/bin/ansible-playbook \
   -i ${ANSIBLE_PATH}/ansible/inventory/hosts.ini \
   ${ANSIBLE_PATH}/ansible/site.yml \
-  -e "amimoto_ec2_region=${REGION}" 2>&1 | tee -a /var/log/amimoto/provision.log
+  -e "amimoto_ec2_region=${REGION}" \
+  -e "amimoto_wordpress_servername=${SERVERNAME}" 2>&1 | tee -a /var/log/amimoto/provision.log
 
 
 ## install WordPress
