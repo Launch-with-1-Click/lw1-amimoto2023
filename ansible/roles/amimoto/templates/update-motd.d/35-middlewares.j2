@@ -1,0 +1,22 @@
+#!/bin/sh
+nginx_ver=`rpm -q --qf '%{version}' nginx`
+{% if mod_php7 %}
+mod_php_ver=`rpm -q --qf '%{version}' php`
+{% else %}
+php_ver=$(php -r 'echo PHP_VERSION;' 2>/dev/null || echo 'not installed')
+{% endif %}
+mariadb_ver=$(rpm -qa 'mariadb*-server' --qf '%{version}' 2>/dev/null | head -1)
+mariadb_ver=${mariadb_ver:-not installed}
+
+cat << EOF
+
+{% if mod_php7 %}
+ Nginx ${nginx_ver}, MOD_PHP ${mod_php_ver}, MariaDB ${mariadb_ver}, $(/usr/local/bin/wp --allow-root --version)
+{% else %}
+ Nginx ${nginx_ver}, PHP ${php_ver}, MariaDB ${mariadb_ver}, $(/usr/local/bin/wp --allow-root --version)
+{% endif %}
+
+ amimoto     https://www.amimoto-ami.com/
+ digitalcube https://en.digitalcube.jp/
+
+EOF

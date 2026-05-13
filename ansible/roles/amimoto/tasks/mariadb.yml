@@ -1,0 +1,76 @@
+---
+- name: Install MariaDB packages
+  ansible.builtin.dnf:
+    name: "{{ amimoto_mariadb_packages }}"
+    state: present
+
+- name: Configure MariaDB
+  ansible.builtin.template:
+    src: mariadb/my.cnf.j2
+    dest: /etc/my.cnf
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    user: "{{ amimoto_mariadb_config_user }}"
+    group: "{{ amimoto_mariadb_config_group }}"
+    max_allowed_packet: "{{ amimoto_mariadb_config_max_allowed_packet }}"
+    innodb_buffer_pool_size: "{{ amimoto_mariadb_config_innodb_buffer_pool_size }}"
+    innodb_log_file_size: "{{ amimoto_mariadb_config_innodb_log_file_size }}"
+    innodb_buffer_pool_instances: "{{ amimoto_mariadb_config_innodb_buffer_pool_instances }}"
+    innodb_file_format: "{{ amimoto_mariadb_config_innodb_file_format }}"
+    innodb_file_format_max: "{{ amimoto_mariadb_config_innodb_file_format_max }}"
+    query_cache_size: "{{ amimoto_mariadb_config_query_cache_size }}"
+    tmp_table_size: "{{ amimoto_mariadb_config_tmp_table_size }}"
+    table_open_cache: "{{ amimoto_mariadb_config_table_open_cache }}"
+    max_connections: "{{ amimoto_mariadb_config_max_connections }}"
+    thread_cache: "{{ amimoto_mariadb_config_thread_cache }}"
+    sort_buffer_size: "{{ amimoto_mariadb_config_sort_buffer_size }}"
+    read_buffer_size: "{{ amimoto_mariadb_config_read_buffer_size }}"
+    read_rnd_buffer_size: "{{ amimoto_mariadb_config_read_rnd_buffer_size }}"
+    join_buffer_size: "{{ amimoto_mariadb_config_join_buffer_size }}"
+    sql_mode: "{{ amimoto_mariadb_config_sql_mode }}"
+    pid_path: "{{ amimoto_mariadb_pid_path }}"
+    error_log_path: "{{ amimoto_mariadb_error_log_path }}"
+    slow_log_path: "{{ amimoto_mariadb_slow_log_path }}"
+  notify: Restart mariadb
+
+- name: Initialize MariaDB
+  ansible.builtin.command: "mariadb-install-db --user={{ amimoto_mariadb_system_user }}"
+  args:
+    creates: "{{ amimoto_mariadb_system_db_dir }}"
+
+- name: Configure MariaDB logrotate
+  ansible.builtin.template:
+    src: logrotat.d/mariadb.j2
+    dest: /etc/logrotate.d/mariadb
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    user: "{{ amimoto_mariadb_config_user }}"
+    group: "{{ amimoto_mariadb_config_group }}"
+    error_log_path: "{{ amimoto_mariadb_error_log_path }}"
+    slow_log_path: "{{ amimoto_mariadb_slow_log_path }}"
+
+- name: Ensure MariaDB log directory exists
+  ansible.builtin.file:
+    path: /var/log/mariadb
+    state: directory
+    owner: "{{ amimoto_mariadb_config_user }}"
+    group: "{{ amimoto_mariadb_config_group }}"
+    mode: "0755"
+
+- name: Ensure slow log file exists
+  ansible.builtin.file:
+    path: "{{ amimoto_mariadb_slow_log_path }}"
+    owner: "{{ amimoto_mariadb_config_user }}"
+    group: root
+    mode: "0640"
+    state: touch
+
+- name: Enable and start MariaDB
+  ansible.builtin.service:
+    name: "{{ amimoto_mariadb_service_name }}"
+    enabled: "{{ amimoto_mariadb_enabled | bool }}"
+    state: "{{ amimoto_mariadb_enabled | bool | ternary('started','stopped') }}"

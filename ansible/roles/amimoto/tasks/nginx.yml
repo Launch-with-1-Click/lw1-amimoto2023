@@ -1,0 +1,233 @@
+---
+- name: Install nginx packages
+  ansible.builtin.dnf:
+    name: "{{ amimoto_nginx_packages }}"
+    state: present
+
+- name: Install nginx cache purge module
+  ansible.builtin.dnf:
+    name: nginx-mod-http_cache_purge23
+    state: present
+  when: amimoto_nginx_ngx_cache_purge_enable | bool
+
+- name: Install nginx mruby module
+  ansible.builtin.dnf:
+    name: nginx-mod-ngx_mruby
+    state: present
+  when: amimoto_nginx_ngx_mruby | bool
+
+- name: Ensure nginx group exists
+  ansible.builtin.group:
+    name: "{{ amimoto_nginx_config_group }}"
+    state: present
+
+- name: Ensure nginx user exists
+  ansible.builtin.user:
+    name: "{{ amimoto_nginx_config_user }}"
+    group: "{{ amimoto_nginx_config_group }}"
+    system: true
+    create_home: false
+    shell: /sbin/nologin
+  when: amimoto_nginx_config_user != "amimoto-user"
+
+- name: Configure nginx.conf
+  ansible.builtin.template:
+    src: nginx/nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    user: "{{ amimoto_nginx_config_user }}"
+    group: "{{ amimoto_nginx_config_group }}"
+    worker_processes: "{{ amimoto_nginx_config_worker_processes }}"
+    worker_rlimit_nofile: "{{ amimoto_nginx_config_worker_rlimit_nofile }}"
+    worker_connections: "{{ amimoto_nginx_config_worker_connections }}"
+    client_max_body_size: "{{ amimoto_nginx_config_client_max_body_size }}"
+    proxy_read_timeout: "{{ amimoto_nginx_config_proxy_read_timeout }}"
+    backend_upstream: "{{ amimoto_nginx_config_backend_upstream }}"
+    upstream_keepalive: "{{ amimoto_nginx_config_upstream_keepalive }}"
+    php_upstream: "{{ amimoto_nginx_config_php_upstream }}"
+  notify: Restart nginx
+
+- name: Ensure nginx configuration directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/nginx/modules.d
+    - /etc/nginx/conf.d
+
+- name: Configure nginx helper snippets
+  ansible.builtin.template:
+    src: "nginx/{{ item }}.j2"
+    dest: "/etc/nginx/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    phpmyadmin_enable: "{{ amimoto_nginx_config_phpmyadmin_enable }}"
+    wp_multisite: "{{ amimoto_nginx_config_wp_multisite }}"
+    mobile_detect_enable: "{{ amimoto_nginx_config_mobile_detect_enable }}"
+    backend_upstream: "{{ amimoto_nginx_config_backend_upstream }}"
+    php_upstream: "{{ amimoto_nginx_config_php_upstream }}"
+    ua_ktai: "{{ amimoto_nginx_config_ua_ktai }}"
+    ua_smartphone: "{{ amimoto_nginx_config_ua_smartphone }}"
+    ua_smartphone_off: "{{ amimoto_nginx_config_ua_smartphone_off }}"
+  loop:
+    - drop
+    - mobile-detect
+    - phpmyadmin
+    - php-fpm
+    - mime.types
+    - wp-front
+    - wp-multisite-subdir
+    - wp-singlesite
+  notify: Reload nginx
+
+- name: Ensure nginx vhosts.d directory exists
+  ansible.builtin.file:
+    path: /etc/nginx/vhosts.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure pilott vhost (non-as)
+  ansible.builtin.template:
+    src: nginx/vhosts.d/pilott.amimoto.io.non_as.http.conf.j2
+    dest: /etc/nginx/vhosts.d/pilott.amimoto.io.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: amimoto_pilott_mysql_domain | length > 0
+  notify: Reload nginx
+
+- name: Configure pilott vhost
+  ansible.builtin.template:
+    src: nginx/vhosts.d/pilott.amimoto.io.conf.j2
+    dest: /etc/nginx/vhosts.d/pilott.amimoto.io.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: amimoto_pilott_mysql_domain | length == 0
+  notify: Reload nginx
+
+- name: Configure nginx conf.d files
+  ansible.builtin.template:
+    src: "nginx/conf.d/{{ item }}.j2"
+    dest: "/etc/nginx/conf.d/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    vpc_ips: "{{ amimoto_nginx_config_vpc_ips }}"
+    cf_ips: "{{ amimoto_nginx_config_cf_ips }}"
+    expires_default: "{{ amimoto_nginx_config_expires_default }}"
+    expires_image: "{{ amimoto_nginx_config_expires_image }}"
+    expires_audio: "{{ amimoto_nginx_config_expires_audio }}"
+    expires_video: "{{ amimoto_nginx_config_expires_video }}"
+    expires_woff: "{{ amimoto_nginx_config_expires_woff }}"
+    expires_css: "{{ amimoto_nginx_config_expires_css }}"
+    expires_js: "{{ amimoto_nginx_config_expires_js }}"
+    expires_pdf: "{{ amimoto_nginx_config_expires_pdf }}"
+    expires_eot: "{{ amimoto_nginx_config_expires_eot }}"
+    expires_flash: "{{ amimoto_nginx_config_expires_flash }}"
+  loop:
+    - 00_real_ip.conf
+    - 01_expires_map.conf
+  notify: Reload nginx
+
+- name: Configure nginx modules
+  ansible.builtin.template:
+    src: nginx/modules.d/default_module.conf.j2
+    dest: /etc/nginx/modules.d/default_module.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Remove default php.conf to avoid invalid upstream
+  ansible.builtin.file:
+    path: /etc/nginx/default.d/php.conf
+    state: absent
+  notify: Reload nginx
+
+- name: Configure cache purge module
+  ansible.builtin.template:
+    src: nginx/modules.d/ngx_http_cache_purge_module.conf.j2
+    dest: /etc/nginx/modules.d/ngx_http_cache_purge_module.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: amimoto_nginx_ngx_cache_purge_enable | bool
+  notify: Restart nginx
+
+- name: Remove cache purge module config when disabled
+  ansible.builtin.file:
+    path: /etc/nginx/modules.d/ngx_http_cache_purge_module.conf
+    state: absent
+  when: not amimoto_nginx_ngx_cache_purge_enable | bool
+  notify: Restart nginx
+
+- name: Configure ngx_mruby module
+  ansible.builtin.template:
+    src: nginx/modules.d/ngx_mruby_module.conf.j2
+    dest: /etc/nginx/modules.d/ngx_mruby_module.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: amimoto_nginx_ngx_mruby | bool
+  notify: Restart nginx
+
+- name: Remove ngx_mruby module config when disabled
+  ansible.builtin.file:
+    path: /etc/nginx/modules.d/ngx_mruby_module.conf
+    state: absent
+  when: not amimoto_nginx_ngx_mruby | bool
+  notify: Restart nginx
+
+- name: Remove ngx_http_mruby module config
+  ansible.builtin.file:
+    path: /etc/nginx/modules.d/ngx_http_mruby_module.conf
+    state: absent
+  notify: Restart nginx
+
+- name: Remove ngx_pagespeed module config
+  ansible.builtin.file:
+    path: /etc/nginx/modules.d/ngx_pagespeed_module.conf
+    state: absent
+  notify: Restart nginx
+
+- name: Ensure nginx cache and log directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ amimoto_nginx_config_user }}"
+    group: "{{ amimoto_nginx_config_group }}"
+    mode: "0755"
+    recurse: true
+  loop:
+    - /var/cache/nginx
+    - /var/log/nginx
+    - /var/lib/nginx
+    - /var/tmp/nginx
+
+- name: Ensure vhosts directory exists
+  ansible.builtin.file:
+    path: /var/www/vhosts
+    state: directory
+    owner: "{{ amimoto_nginx_config_user }}"
+    group: "{{ amimoto_nginx_config_group }}"
+    mode: "0755"
+
+- name: Enable and start nginx
+  ansible.builtin.service:
+    name: nginx
+    enabled: "{{ amimoto_nginx_enabled | bool }}"
+    state: >-
+      {{ (amimoto_defer_service_start | bool)
+         | ternary('stopped', (amimoto_nginx_enabled | bool | ternary('started','stopped'))) }}

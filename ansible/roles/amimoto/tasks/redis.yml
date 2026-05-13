@@ -1,0 +1,25 @@
+---
+- name: Install redis packages
+  ansible.builtin.dnf:
+    name: "{{ amimoto_redis_packages }}"
+    state: present
+  when: amimoto_redis_enabled | bool
+
+- name: Configure redis
+  ansible.builtin.template:
+    src: redis/redis.conf.j2
+    dest: "{{ amimoto_redis_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    bind: "{{ amimoto_redis_config_bind }}"
+  when: amimoto_redis_enabled | bool
+  notify: Restart redis
+
+- name: Enable and start redis
+  ansible.builtin.service:
+    name: "{{ amimoto_redis_service_name }}"
+    enabled: true
+    state: "{{ amimoto_defer_service_start | bool | ternary('stopped','started') }}"
+  when: amimoto_redis_enabled | bool

@@ -1,0 +1,15 @@
+---
+- name: Install memcached packages
+  ansible.builtin.dnf:
+    name:
+      - memcached
+      - php-pecl-memcached
+    state: present
+  when: amimoto_memcached_enabled | bool
+
+- name: Enable and start memcached
+  ansible.builtin.service:
+    name: memcached
+    enabled: true
+    state: "{{ amimoto_defer_service_start | bool | ternary('stopped','started') }}"
+  when: amimoto_memcached_enabled | bool

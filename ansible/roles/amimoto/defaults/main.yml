@@ -1,0 +1,547 @@
+---
+# General
+amimoto_timezone: "UTC"
+amimoto_sysconfig_lang: "en_US.UTF-8"
+amimoto_sysconfig_sysfont: "latarcyrheb-sun16"
+amimoto_region_timezone_map:
+  eu-west-1: "WET"
+  ap-southeast-1: "Asia/Singapore"
+  ap-southeast-2: "Australia/Sydney"
+  ap-south-1: "Asia/Kolkata"
+  eu-central-1: "Europe/Berlin"
+  ap-northeast-2: "Asia/Seoul"
+  ap-northeast-1: "Asia/Tokyo"
+  us-east-1: "US/Eastern"
+  sa-east-1: "America/Sao_Paulo"
+  us-west-1: "US/Pacific"
+  us-west-2: "US/Pacific"
+
+amimoto_ec2_instance_id: "{{ ansible_facts.get('ec2_instance_id', inventory_hostname) }}"
+amimoto_ec2_region: "{{ ansible_facts.get('ec2_region', '') }}"
+amimoto_ec2_instance_type: "{{ ansible_facts.get('ec2_instance_type', '') }}"
+amimoto_fqdn: "{{ ansible_facts.get('fqdn', inventory_hostname) }}"
+
+amimoto_mod_php7_enabled: false
+
+amimoto_web_user: "amimoto-user"
+amimoto_web_group: "www"
+amimoto_web_servername: "localhost"
+
+amimoto_base_packages:
+  - zip
+  - unzip
+  - wget
+  - git
+  - openssl
+  - bash
+  - amazon-efs-utils
+  - certbot
+  - rsyslog
+  - cronie
+  - iptables
+
+# Repos
+amimoto_spal_repo_name: "amazonlinux-spal"
+amimoto_spal_repo_description: "Amazon Linux 2023 SPAL"
+amimoto_spal_repo_baseurl: "https://cdn.amazonlinux.com/al2023/spal/latest/$basearch/"
+amimoto_spal_repo_gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-amazon-linux-2023"
+amimoto_spal_repo_enabled: true
+amimoto_spal_repo_gpgcheck: true
+
+amimoto_nginx_repo_enabled: true
+amimoto_nginx_repo_baseurl: "https://repos.amimoto-ami.com/enterprise/7/amimoto-nginx-mainline-amzn2/x86_64/"
+
+# Nginx
+amimoto_nginx_enabled: true
+amimoto_nginx_http2_enable: false
+amimoto_nginx_ngx_cache_purge_enable: false
+amimoto_nginx_ngx_mruby: false
+amimoto_nginx_ngx_pagespeed: false
+amimoto_nginx_packages:
+  - nginx
+amimoto_nginx_config_user: "{{ amimoto_web_user }}"
+amimoto_nginx_config_group: "{{ amimoto_web_group }}"
+amimoto_nginx_config_backend_upstream: "unix:/var/run/nginx-backend.sock"
+amimoto_nginx_config_php_upstream: "unix:/run/php-fpm/www.sock"
+amimoto_nginx_config_upstream_keepalive: 16
+amimoto_nginx_config_listen: "80"
+amimoto_nginx_config_listen_ssl: "443"
+amimoto_nginx_config_listen_backend: "{{ amimoto_nginx_config_backend_upstream }}"
+amimoto_nginx_config_worker_processes: "{{ ansible_facts.get('processor_vcpus', 1) }}"
+amimoto_nginx_config_client_max_body_size: "32M"
+amimoto_nginx_config_proxy_read_timeout: "90"
+amimoto_nginx_config_worker_rlimit_nofile: "10240"
+amimoto_nginx_config_worker_connections: "8192"
+amimoto_nginx_config_phpmyadmin_enable: false
+amimoto_nginx_config_wp_multisite: false
+amimoto_nginx_config_mobile_detect_enable: false
+amimoto_nginx_config_ua_ktai: '(DoCoMo|J-PHONE|Vodafone|MOT-|UP\.Browser|DDIPOCKET|ASTEL|PDXGW|Palmscape|Xiino|sharp pda browser|Windows CE|L-mode|WILLCOM|SoftBank|Semulator|Vemulator|J-EMULATOR|emobile|mixi-mobile-converter|PSP)'
+amimoto_nginx_config_ua_smartphone: '(iPhone|iPod|incognito|webmate|Android|dream|CUPCAKE|froyo|BlackBerry|webOS|s8000|bada|IEMobile|Googlebot\-Mobile|AdsBot\-Google)'
+amimoto_nginx_config_ua_smartphone_off: 'wptouch[^\\=]+\\=(normal|desktop)'
+
+amimoto_nginx_config_expires_default: "off"
+amimoto_nginx_config_expires_image: "max"
+amimoto_nginx_config_expires_audio: "max"
+amimoto_nginx_config_expires_video: "max"
+amimoto_nginx_config_expires_css: "30d"
+amimoto_nginx_config_expires_js: "30d"
+amimoto_nginx_config_expires_pdf: "max"
+amimoto_nginx_config_expires_flash: "30d"
+amimoto_nginx_config_expires_woff: "max"
+amimoto_nginx_config_expires_eot: "max"
+amimoto_nginx_config_abuse_ua_blocking: false
+
+amimoto_nginx_config_vpc_ips:
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+amimoto_nginx_config_cf_ips:
+  - 120.52.22.96/27
+  - 205.251.249.0/24
+  - 180.163.57.128/26
+  - 204.246.168.0/22
+  - 111.13.171.128/26
+  - 18.160.0.0/15
+  - 205.251.252.0/23
+  - 54.192.0.0/16
+  - 204.246.173.0/24
+  - 54.230.200.0/21
+  - 120.253.240.192/26
+  - 116.129.226.128/26
+  - 130.176.0.0/17
+  - 3.173.192.0/18
+  - 108.156.0.0/14
+  - 99.86.0.0/16
+  - 13.32.0.0/15
+  - 120.253.245.128/26
+  - 13.224.0.0/14
+  - 70.132.0.0/18
+  - 15.158.0.0/16
+  - 111.13.171.192/26
+  - 13.249.0.0/16
+  - 18.238.0.0/15
+  - 18.244.0.0/15
+  - 205.251.208.0/20
+  - 3.165.0.0/16
+  - 3.168.0.0/14
+  - 65.9.128.0/18
+  - 130.176.128.0/18
+  - 58.254.138.0/25
+  - 205.251.206.0/23
+  - 54.230.208.0/20
+  - 3.160.0.0/14
+  - 116.129.226.0/25
+  - 52.222.128.0/17
+  - 18.164.0.0/15
+  - 111.13.185.32/27
+  - 64.252.128.0/18
+  - 205.251.254.0/24
+  - 3.166.0.0/15
+  - 54.230.224.0/19
+  - 71.152.0.0/17
+  - 216.137.32.0/19
+  - 204.246.172.0/24
+  - 205.251.202.0/23
+  - 18.172.0.0/15
+  - 120.52.39.128/27
+  - 118.193.97.64/26
+  - 3.164.64.0/18
+  - 18.154.0.0/15
+  - 3.173.0.0/17
+  - 54.240.128.0/18
+  - 205.251.250.0/23
+  - 180.163.57.0/25
+  - 52.46.0.0/18
+  - 3.174.0.0/15
+  - 52.82.128.0/19
+  - 54.230.0.0/17
+  - 54.230.128.0/18
+  - 54.239.128.0/18
+  - 130.176.224.0/20
+  - 36.103.232.128/26
+  - 52.84.0.0/15
+  - 143.204.0.0/16
+  - 144.220.0.0/16
+  - 120.52.153.192/26
+  - 119.147.182.0/25
+  - 120.232.236.0/25
+  - 111.13.185.64/27
+  - 3.164.0.0/18
+  - 3.172.64.0/18
+  - 54.182.0.0/16
+  - 58.254.138.128/26
+  - 120.253.245.192/27
+  - 54.239.192.0/19
+  - 18.68.0.0/16
+  - 18.64.0.0/14
+  - 120.52.12.64/26
+  - 99.84.0.0/16
+  - 205.251.204.0/23
+  - 130.176.192.0/19
+  - 52.124.128.0/17
+  - 204.246.164.0/22
+  - 13.35.0.0/16
+  - 204.246.174.0/23
+  - 3.164.128.0/17
+  - 3.172.0.0/18
+  - 36.103.232.0/25
+  - 119.147.182.128/26
+  - 118.193.97.128/25
+  - 120.232.236.128/26
+  - 204.246.176.0/20
+  - 65.8.0.0/16
+  - 65.9.0.0/17
+  - 108.138.0.0/15
+  - 120.253.241.160/27
+  - 3.173.128.0/18
+  - 64.252.64.0/18
+  - 13.113.196.64/26
+  - 13.113.203.0/24
+  - 52.199.127.192/26
+  - 57.182.253.0/24
+  - 57.183.42.0/25
+  - 13.124.199.0/24
+  - 3.35.130.128/25
+  - 52.78.247.128/26
+  - 13.203.133.0/26
+  - 13.233.177.192/26
+  - 15.207.13.128/25
+  - 15.207.213.128/25
+  - 52.66.194.128/26
+  - 13.228.69.0/24
+  - 47.129.82.0/24
+  - 47.129.83.0/24
+  - 47.129.84.0/24
+  - 52.220.191.0/26
+  - 13.210.67.128/26
+  - 13.54.63.128/26
+  - 3.107.43.128/25
+  - 3.107.44.0/25
+  - 3.107.44.128/25
+  - 43.218.56.128/26
+  - 43.218.56.192/26
+  - 43.218.56.64/26
+  - 43.218.71.0/26
+  - 99.79.169.0/24
+  - 18.192.142.0/23
+  - 18.199.68.0/22
+  - 18.199.72.0/22
+  - 18.199.76.0/22
+  - 35.158.136.0/24
+  - 52.57.254.0/24
+  - 18.200.212.0/23
+  - 52.212.248.0/26
+  - 13.134.24.0/23
+  - 13.134.94.0/23
+  - 18.175.65.0/24
+  - 18.175.66.0/24
+  - 18.175.67.0/24
+  - 3.10.17.128/25
+  - 3.11.53.0/24
+  - 35.162.63.192/26
+  - 35.167.191.128/26
+  - 35.93.168.0/23
+  - 35.93.170.0/23
+  - 35.93.172.0/23
+  - 44.227.178.0/24
+  - 44.234.108.128/25
+  - 44.234.90.252/30
+
+# Apache
+amimoto_httpd_enabled: false
+amimoto_httpd_packages:
+  - httpd
+  - httpd-devel
+  - httpd-manual
+  - httpd-tools
+amimoto_httpd_config_user: "{{ amimoto_web_user }}"
+amimoto_httpd_config_group: "{{ amimoto_web_group }}"
+amimoto_httpd_config_servername: "{{ amimoto_web_servername }}"
+amimoto_httpd_config_listen: "8080"
+amimoto_httpd_config_allow_override: "NONE"
+amimoto_httpd_config_max_requests_per_child: 4000
+amimoto_httpd_config_max_keep_alive_requests: 2500
+amimoto_httpd_config_keep_alive_timeout: 5
+
+# PHP
+amimoto_php_version: "8.3"
+amimoto_ssm_php_version_parameter: ""
+amimoto_php_packages:
+  - "php{{ amimoto_php_version }}"
+  - "php{{ amimoto_php_version }}-common"
+  - "php{{ amimoto_php_version }}-cli"
+  - "php{{ amimoto_php_version }}-fpm"
+  - "php{{ amimoto_php_version }}-mbstring"
+  - "php{{ amimoto_php_version }}-gd"
+  - "php-pear"
+  - "php{{ amimoto_php_version }}-xml"
+  - "php{{ amimoto_php_version }}-soap"
+  - "php{{ amimoto_php_version }}-mysqlnd"
+  - "php{{ amimoto_php_version }}-pdo"
+  - "php{{ amimoto_php_version }}-opcache"
+  - "php{{ amimoto_php_version }}-bcmath"
+  - "php{{ amimoto_php_version }}-intl"
+  - "php{{ amimoto_php_version }}-devel"
+
+amimoto_php_fpm_service_name: "php-fpm"
+amimoto_php_config_user: "{{ amimoto_web_user }}"
+amimoto_php_config_group: "{{ amimoto_web_group }}"
+amimoto_php_listen: "/run/php-fpm/www.sock"
+amimoto_php_listen_backlog: "65536"
+amimoto_php_rlimit_files: "131072"
+amimoto_php_rlimit_core: "0"
+amimoto_php_pm: "dynamic"
+amimoto_php_max_children: "5"
+amimoto_php_start_servers: "1"
+amimoto_php_min_spare_servers: "1"
+amimoto_php_max_spare_servers: "4"
+amimoto_php_memory_limit: "256M"
+amimoto_php_max_requests: "200"
+amimoto_php_max_input_vars: "1000"
+amimoto_php_max_input_time: "60"
+amimoto_php_max_input_nesting_level: "64"
+amimoto_php_upload_max_filesize: "32M"
+amimoto_php_post_max_size: "32M"
+amimoto_php_request_terminate_timeout: "90"
+amimoto_php_request_slowlog_timeout: "90"
+amimoto_php_max_execution_time: "90"
+amimoto_php_session_save_handler: "files"
+amimoto_php_session_save_path: "/tmp"
+amimoto_php_sendmail_path: "/usr/sbin/sendmail -t -i"
+amimoto_php_limit_extensions: ".php"
+amimoto_php_opcache_enable: "1"
+amimoto_php_opcache_memory_consumption: "128"
+amimoto_php_opcache_interned_strings_buffer: "8"
+amimoto_php_opcache_max_accelerated_files: "4000"
+amimoto_php_opcache_revalidate_freq: "60"
+amimoto_php_opcache_validate_timestamps: "1"
+
+# MySQL/MariaDB
+amimoto_mariadb_enabled: true
+amimoto_mariadb_version: "11.4"
+amimoto_mariadb_packages:
+  - "mariadb{{ amimoto_mariadb_version | replace('.', '') }}-server"
+  - "mariadb{{ amimoto_mariadb_version | replace('.', '') }}"
+amimoto_mariadb_service_name: "mariadb"
+amimoto_mariadb_config_user: "mysql"
+amimoto_mariadb_config_group: "mysql"
+amimoto_mariadb_system_user: "mysql"
+amimoto_mariadb_data_dir: "/var/lib/mysql"
+amimoto_mariadb_system_db_dir: "/var/lib/mysql/mysql"
+amimoto_mariadb_pid_path: "/run/mariadb/mariadb.pid"
+amimoto_mariadb_error_log_path: "/var/log/mariadb/mariadb.log"
+amimoto_mariadb_slow_log_path: "/var/log/mariadb/mariadb-slow.log"
+amimoto_mariadb_config_max_allowed_packet: "1M"
+amimoto_mariadb_config_innodb_buffer_pool_size: "64M"
+amimoto_mariadb_config_innodb_log_file_size: "16M"
+amimoto_mariadb_config_innodb_buffer_pool_instances: "1"
+amimoto_mariadb_config_innodb_file_format: "Barracuda"
+amimoto_mariadb_config_innodb_file_format_max: "{{ amimoto_mariadb_config_innodb_file_format }}"
+amimoto_mariadb_config_query_cache_size: "64M"
+amimoto_mariadb_config_tmp_table_size: "64M"
+amimoto_mariadb_config_table_open_cache: "1024"
+amimoto_mariadb_config_max_connections: "128"
+amimoto_mariadb_config_thread_cache: "128"
+amimoto_mariadb_config_sort_buffer_size: "512K"
+amimoto_mariadb_config_read_buffer_size: "256K"
+amimoto_mariadb_config_read_rnd_buffer_size: "256K"
+amimoto_mariadb_config_join_buffer_size: "256K"
+amimoto_mariadb_config_sql_mode: "NO_ENGINE_SUBSTITUTION"
+
+# Memcached
+amimoto_memcached_enabled: false
+
+# Redis
+amimoto_redis_enabled: false
+amimoto_redis_version: "6"
+amimoto_redis_service_name: "redis{{ amimoto_redis_version }}"
+amimoto_redis_packages:
+  - jemalloc
+  - "redis{{ amimoto_redis_version }}"
+  - "php{{ amimoto_php_version }}-pecl-redis{{ amimoto_redis_version }}"
+amimoto_redis_config_path: "/etc/redis{{ amimoto_redis_version }}/redis{{ amimoto_redis_version }}.conf"
+amimoto_redis_pid_path: "/var/run/redis{{ amimoto_redis_version }}/redis{{ amimoto_redis_version }}.pid"
+amimoto_redis_config_bind: "* -::*"
+
+# Goofys
+amimoto_goofys_install: false
+amimoto_goofys_version: "0.24.0"
+amimoto_goofys_packages:
+  - golang
+  - fuse
+amimoto_goofys_source_url: "https://github.com/kahing/goofys/releases/download/v{{ amimoto_goofys_version }}/goofys"
+amimoto_goofys_mount: false
+amimoto_goofys_profile: "default"
+amimoto_goofys_region: "us-east-1"
+amimoto_goofys_s3_bucket: "s3_bucket_name"
+amimoto_goofys_mount_point: "/mnt/s3"
+
+# Let's Encrypt
+amimoto_letsencrypt_install: false
+amimoto_letsencrypt_email: "info+letsencrypt@digitalcube.jp"
+amimoto_pilott_mysql_domain: ""
+amimoto_pilott_mysql_wildcard: "*.mysql.pilott.amimoto.io"
+
+# Monit
+amimoto_monit_enabled: true
+amimoto_monit_config_file: "/etc/monit.conf"
+amimoto_monit_config_dir: "/etc/monit.d"
+amimoto_monit_alert: []
+amimoto_monit_monitor:
+  nginx: "{{ amimoto_nginx_enabled }}"
+  httpd: "{{ amimoto_httpd_enabled or amimoto_mod_php7_enabled }}"
+  php-fpm: true
+  mariadb: "{{ amimoto_mariadb_enabled }}"
+  memcached: "{{ amimoto_memcached_enabled }}"
+  redis: "{{ amimoto_redis_enabled }}"
+  crond: true
+  logging: true
+amimoto_monit_template_map:
+  nginx: "monit/nginx.j2"
+  httpd: "monit/process_monitor.j2"
+  php-fpm: "monit/php-fpm.j2"
+  mariadb: "monit/process_monitor.j2"
+  memcached: "monit/process_monitor.j2"
+  redis: "monit/process_monitor.j2"
+  crond: "monit/process_monitor.j2"
+  logging: "monit/logging.j2"
+amimoto_monit_processes:
+  - name: "nginx"
+    pidfile: "/var/run/nginx.pid"
+    start: "/bin/systemctl start nginx.service"
+    stop: "/bin/systemctl stop nginx.service"
+    user: "{{ amimoto_nginx_config_user }}"
+    group: "{{ amimoto_nginx_config_group }}"
+    rules:
+      - "if failed host 127.0.0.1 port 80 protocol http request \"/ping.txt\" with timeout 10 seconds then restart"
+  - name: "httpd"
+    pidfile: "/var/run/httpd/httpd.pid"
+    start: "/bin/systemctl start httpd.service"
+    stop: "/bin/systemctl stop httpd.service"
+    user: "{{ amimoto_nginx_config_user }}"
+    group: "{{ amimoto_nginx_config_group }}"
+    rules: []
+  - name: "php-fpm"
+    pidfile: "/var/run/php-fpm/php-fpm.pid"
+    start: "/bin/systemctl start php-fpm.service"
+    stop: "/bin/systemctl stop php-fpm.service"
+    user: "{{ amimoto_php_config_user }}"
+    group: "{{ amimoto_php_config_group }}"
+    rules: []
+  - name: "mariadb"
+    pidfile: "{{ amimoto_mariadb_pid_path }}"
+    start: "/bin/systemctl start mariadb.service"
+    stop: "/bin/systemctl stop mariadb.service"
+    user: "{{ amimoto_mariadb_config_user }}"
+    group: "{{ amimoto_mariadb_config_group }}"
+    rules: []
+  - name: "memcached"
+    start: "/bin/systemctl start memcached.service"
+    stop: "/bin/systemctl stop memcached.service"
+    rules: []
+  - name: "redis"
+    pidfile: "{{ amimoto_redis_pid_path }}"
+    start: "/bin/systemctl start {{ amimoto_redis_service_name }}.service"
+    stop: "/bin/systemctl stop {{ amimoto_redis_service_name }}.service"
+    rules: []
+  - name: "crond"
+    pidfile: "/var/run/crond.pid"
+    start: "/bin/systemctl start crond.service"
+    stop: "/bin/systemctl stop crond.service"
+    rules: []
+  - name: "logging"
+    rules: []
+
+# WP-CLI
+amimoto_wpcli_dir: "/usr/share/wp-cli"
+amimoto_wpcli_version: "gh-pages"
+amimoto_wpcli_link: "/usr/local/bin/wp"
+amimoto_wpcli_repository: "https://github.com/wp-cli/builds.git"
+
+# WordPress
+amimoto_wordpress_install: true
+amimoto_wordpress_servername: "{{ amimoto_ec2_instance_id }}"
+amimoto_wordpress_version: "6.8.1"
+amimoto_wordpress_document_root: "/var/www/vhosts/{{ amimoto_wordpress_servername }}"
+amimoto_wordpress_wp_multisite: "{{ amimoto_nginx_config_wp_multisite }}"
+amimoto_wordpress_mobile_detect_enable: "{{ amimoto_nginx_config_mobile_detect_enable }}"
+amimoto_wordpress_phpmyadmin_enable: "{{ amimoto_nginx_config_phpmyadmin_enable }}"
+amimoto_wordpress_table_prefix: "wp_"
+amimoto_wordpress_woocommerce: false
+amimoto_wordpress_jinkei_cf: true
+amimoto_wordpress_db_name: "{{ amimoto_wordpress_servername }}"
+amimoto_wordpress_db_user: "{{ amimoto_wordpress_servername }}"
+amimoto_wordpress_db_password: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+amimoto_wordpress_db_host: "localhost"
+amimoto_wordpress_db_rootpass: ""
+amimoto_wordpress_site_name: "{{ amimoto_wordpress_servername }}"
+amimoto_wordpress_subdir: ""
+amimoto_wordpress_local_ipv4: "{{ ansible_facts.get('default_ipv4', {}).get('address', '') }}"
+amimoto_wordpress_cf_distribution_id: ""
+amimoto_wordpress_cf_domain: ""
+amimoto_ssm_cf_distribution_id_parameter: ""
+amimoto_ssm_cf_domain_parameter: ""
+amimoto_wordpress_site_url: "http://{{ amimoto_wordpress_servername }}"
+amimoto_wordpress_site_title: "WordPress"
+amimoto_wordpress_admin_user: "admin"
+amimoto_wordpress_admin_password: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters,digits') }}"
+amimoto_wordpress_admin_email: "admin@example.com"
+amimoto_wordpress_run_install: false
+amimoto_wordpress_salt_auth_key: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+amimoto_wordpress_salt_secure_auth_key: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+amimoto_wordpress_salt_logged_in_key: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+amimoto_wordpress_salt_nonce_key: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+amimoto_wordpress_salt_auth_salt: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+amimoto_wordpress_salt_secure_auth_salt: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+amimoto_wordpress_salt_logged_in_salt: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+amimoto_wordpress_salt_nonce_salt: "{{ lookup('password', '/dev/null length=64 chars=hex') }}"
+
+amimoto_wordpress_plugins:
+  - c3-cloudfront-clear-cache
+  - amimoto-dashboard
+amimoto_wordpress_mu_plugins:
+  - mu-plugins.php
+amimoto_wordpress_themes: []
+
+# phpMyAdmin
+amimoto_phpmyadmin_install: true
+amimoto_phpmyadmin_version: "5.2.0"
+amimoto_phpmyadmin_blowfish_secret: "{{ lookup('password', '/dev/null length=32 chars=hex') }}"
+amimoto_phpmyadmin_servers:
+  - auth_type: "cookie"
+    host: "{{ amimoto_wordpress_db_host }}"
+    connect_type: "tcp"
+    compress: "false"
+    allow_no_password: "false"
+    hide_db: ""
+
+# Sysctl/Swap
+amimoto_sysctl_swappiness: 0
+amimoto_swapfile_size_mb: 2048
+
+# iptables
+amimoto_iptables_disable: false
+
+# Update motd
+amimoto_update_motd_enabled: true
+
+# Service control
+amimoto_defer_service_start: true
+
+# NFS
+amimoto_nfs_enabled: false
+amimoto_nfs_mode: "client" # client or server
+amimoto_nfs_server_ip: ""
+amimoto_nfs_server_instance_id: ""
+amimoto_nfs_mounts:
+  - src: "/var/www/vhosts/{{ amimoto_nfs_server_instance_id }}"
+    dest: "/var/www/vhosts/{{ amimoto_ec2_instance_id }}"
+    opts: "rw"
+  - src: "/var/cache/nginx/proxy_cache"
+    dest: "/var/cache/nginx/proxy_cache"
+    opts: "rw"
+
+# EFS
+amimoto_efs_enabled: true
+amimoto_efs_mount_target_file: "/opt/local/efs-mount-target"
+amimoto_efs_mount_point: "/mnt/efs"

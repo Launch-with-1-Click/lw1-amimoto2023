@@ -1,0 +1,49 @@
+---
+- name: Ensure phpMyAdmin base directory exists
+  ansible.builtin.file:
+    path: /usr/share
+    state: directory
+    mode: "0755"
+  when: amimoto_phpmyadmin_install | bool
+
+- name: Download phpMyAdmin
+  ansible.builtin.get_url:
+    url: "http://repos.amimoto-ami.com/phpmyadmin/phpMyAdmin-{{ amimoto_phpmyadmin_version }}-all-languages.zip"
+    dest: "/usr/share/phpMyAdmin-{{ amimoto_phpmyadmin_version }}-all-languages.zip"
+    mode: "0644"
+  when: amimoto_phpmyadmin_install | bool
+
+- name: Unpack phpMyAdmin
+  ansible.builtin.unarchive:
+    src: "/usr/share/phpMyAdmin-{{ amimoto_phpmyadmin_version }}-all-languages.zip"
+    dest: /usr/share
+    remote_src: true
+  when: amimoto_phpmyadmin_install | bool
+
+- name: Link phpMyAdmin
+  ansible.builtin.file:
+    src: "/usr/share/phpMyAdmin-{{ amimoto_phpmyadmin_version }}-all-languages"
+    dest: /usr/share/phpMyAdmin
+    state: link
+  when: amimoto_phpmyadmin_install | bool
+
+- name: Configure phpMyAdmin
+  ansible.builtin.template:
+    src: phpmyadmin/config.inc.php.j2
+    dest: /usr/share/phpMyAdmin/config.inc.php
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    blowfish_secret: "{{ amimoto_phpmyadmin_blowfish_secret }}"
+    servers: "{{ amimoto_phpmyadmin_servers }}"
+  when: amimoto_phpmyadmin_install | bool
+
+- name: Ensure phpMyAdmin tmp directory exists
+  ansible.builtin.file:
+    path: /usr/share/phpMyAdmin/tmp
+    state: directory
+    owner: "{{ amimoto_nginx_config_user }}"
+    group: "{{ amimoto_nginx_config_group }}"
+    mode: "0755"
+  when: amimoto_phpmyadmin_install | bool

@@ -1,0 +1,38 @@
+[www]
+listen = {{ listen }}
+listen.owner = {{ user }}
+listen.group = {{ group }}
+listen.mode  = 0666
+listen.backlog = {{ listen_backlog }}
+
+user  = {{ user }}
+group = {{ group }}
+
+pm = {{ pm }}
+pm.max_children = {{ max_children }}
+pm.start_servers = {{ start_servers }}
+pm.min_spare_servers = {{ min_spare_servers }}
+pm.max_spare_servers = {{ max_spare_servers }}
+pm.max_requests = {{ max_requests }}
+
+rlimit_files = {{ rlimit_files }}
+rlimit_core = {{ rlimit_core }}
+
+request_terminate_timeout = {{ request_terminate_timeout }}
+request_slowlog_timeout = {{ request_slowlog_timeout }}
+
+{% if limit_extensions != '.php' %}
+security.limit_extensions = {{ limit_extensions }}
+{% endif %}
+
+slowlog = /var/log/php-fpm/www-slow.log
+
+php_admin_value[error_log] = /var/log/php-fpm/www-error.log
+php_admin_flag[log_errors] = on
+php_admin_value[upload_max_filesize] = {{ upload_max_filesize }}
+php_admin_value[post_max_size] = {{ post_max_size }}
+php_admin_value[max_execution_time] = {{ max_execution_time }}
+php_admin_value[memory_limit] = {{ memory_limit }}
+php_admin_value[max_input_vars] = {{ max_input_vars }}
+php_admin_value[max_input_time] = {{ max_input_time }}
+php_admin_value[max_input_nesting_level] = {{ max_input_nesting_level }}

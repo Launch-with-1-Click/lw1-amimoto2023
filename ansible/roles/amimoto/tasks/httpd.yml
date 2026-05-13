@@ -1,0 +1,63 @@
+---
+- name: Ensure httpd group exists
+  ansible.builtin.group:
+    name: "{{ amimoto_httpd_config_group }}"
+    state: present
+
+- name: Ensure httpd user exists
+  ansible.builtin.user:
+    name: "{{ amimoto_httpd_config_user }}"
+    group: "{{ amimoto_httpd_config_group }}"
+    system: true
+    create_home: false
+    shell: /sbin/nologin
+  when: amimoto_httpd_config_user != "amimoto-user"
+
+- name: Install httpd packages
+  ansible.builtin.dnf:
+    name: "{{ amimoto_httpd_packages }}"
+    state: present
+
+- name: Ensure httpd log directory exists
+  ansible.builtin.file:
+    path: /var/log/httpd
+    state: directory
+    owner: "{{ amimoto_httpd_config_user }}"
+    group: "{{ amimoto_httpd_config_group }}"
+    mode: "0700"
+
+- name: Ensure document roots exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ amimoto_httpd_config_user }}"
+    group: "{{ amimoto_httpd_config_group }}"
+    mode: "0775"
+    recurse: true
+  loop:
+    - /opt/local/amimoto
+    - /opt/local/amimoto/wp-admin
+
+- name: Ensure WordPress document root exists
+  ansible.builtin.file:
+    path: "{{ amimoto_wordpress_document_root }}"
+    state: directory
+    owner: "{{ amimoto_httpd_config_user }}"
+    group: "{{ amimoto_httpd_config_group }}"
+    mode: "0775"
+
+- name: Remove default httpd conf files
+  ansible.builtin.file:
+    path: "/etc/httpd/conf.d/{{ item }}"
+    state: absent
+  loop:
+    - welcome.conf
+    - userdir.conf
+
+- name: Enable and start httpd
+  ansible.builtin.service:
+    name: httpd
+    enabled: "{{ amimoto_httpd_enabled | bool }}"
+    state: >-
+      {{ (amimoto_defer_service_start | bool)
+         | ternary('stopped', (amimoto_httpd_enabled | bool | ternary('started','stopped'))) }}

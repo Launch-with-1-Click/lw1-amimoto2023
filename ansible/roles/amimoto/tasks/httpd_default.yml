@@ -1,0 +1,46 @@
+---
+- name: Configure httpd.conf
+  ansible.builtin.template:
+    src: httpd/conf/httpd.conf.j2
+    dest: /etc/httpd/conf/httpd.conf
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    user: "{{ amimoto_httpd_config_user }}"
+    group: "{{ amimoto_httpd_config_group }}"
+    servername: "{{ amimoto_httpd_config_servername }}"
+    listen: "{{ amimoto_httpd_config_listen }}"
+  notify: Restart httpd
+
+- name: Configure httpd amimoto conf
+  ansible.builtin.template:
+    src: httpd/conf.d/000-amimoto.conf.j2
+    dest: /etc/httpd/conf.d/000-amimoto.conf
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    max_keep_alive_requests: "{{ amimoto_httpd_config_max_keep_alive_requests }}"
+    keep_alive_timeout: "{{ amimoto_httpd_config_keep_alive_timeout }}"
+    allow_override: "{{ amimoto_httpd_config_allow_override }}"
+    max_requests_per_child: "{{ amimoto_httpd_config_max_requests_per_child }}"
+  notify: Restart httpd
+
+- name: Configure httpd mod_remoteip
+  ansible.builtin.template:
+    src: httpd/conf.d/mod_remoteip.conf.j2
+    dest: /etc/httpd/conf.d/mod_remoteip.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart httpd
+
+- name: Configure httpd wordpress conf
+  ansible.builtin.template:
+    src: httpd/conf.d/wordpress.conf.j2
+    dest: /etc/httpd/conf.d/wordpress.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart httpd

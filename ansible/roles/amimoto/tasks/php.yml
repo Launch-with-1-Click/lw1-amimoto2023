@@ -1,0 +1,134 @@
+---
+- name: Install PHP dependencies
+  ansible.builtin.dnf:
+    name:
+      - libwebp
+      - ImageMagick
+    state: present
+
+- name: Get currently installed PHP packages
+  ansible.builtin.shell: rpm -qa 'php*' --queryformat '%{NAME}\n'
+  register: amimoto_php_installed_packages
+  changed_when: false
+  failed_when: false
+
+- name: Identify old PHP versioned packages to remove
+  ansible.builtin.set_fact:
+    amimoto_php_old_packages: >-
+      {{ amimoto_php_installed_packages.stdout_lines | default([])
+         | select('match', '^php[0-9]')
+         | reject('match', '^php' + amimoto_php_version)
+         | list }}
+
+- name: Stop php-fpm before version switch
+  ansible.builtin.service:
+    name: "{{ amimoto_php_fpm_service_name }}"
+    state: stopped
+  when: amimoto_php_old_packages | length > 0
+  failed_when: false
+
+- name: Remove php-pear and old PHP version packages
+  ansible.builtin.dnf:
+    name: "{{ amimoto_php_old_packages + ['php-pear'] }}"
+    state: absent
+  when: amimoto_php_old_packages | length > 0
+
+- name: Build PHP package list (exclude opcache for PHP 8.5+)
+  ansible.builtin.set_fact:
+    amimoto_php_install_packages: >-
+      {{ amimoto_php_packages | reject('match', '.*-opcache$') | list
+         if amimoto_php_version is version('8.5', '>=')
+         else amimoto_php_packages }}
+
+- name: Install PHP packages from SPAL
+  ansible.builtin.dnf:
+    name: "{{ amimoto_php_install_packages }}"
+    state: present
+    allowerasing: true
+    enablerepo: "{{ amimoto_spal_repo_name }}"
+
+- name: Ensure PHP configuration directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ amimoto_php_config_user }}"
+    group: "{{ amimoto_php_config_group }}"
+    mode: "0755"
+  loop:
+    - /var/tmp/php
+    - /var/tmp/php/session
+    - /var/log/php-fpm
+    - /run/php-fpm
+
+- name: Configure php.ini
+  ansible.builtin.template:
+    src: php/php.ini.j2
+    dest: /etc/php.ini
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    max_execution_time: "{{ amimoto_php_max_execution_time }}"
+    max_input_vars: "{{ amimoto_php_max_input_vars }}"
+    max_input_time: "{{ amimoto_php_max_input_time }}"
+    max_input_nesting_level: "{{ amimoto_php_max_input_nesting_level }}"
+    sendmail_path: "{{ amimoto_php_sendmail_path }}"
+    session_save_hundler: "{{ amimoto_php_session_save_handler }}"
+    session_save_path: "{{ amimoto_php_session_save_path }}"
+  notify: Restart php-fpm
+
+- name: Configure php-fpm.conf
+  ansible.builtin.template:
+    src: php/php-fpm.conf.j2
+    dest: /etc/php-fpm.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart php-fpm
+
+- name: Configure php-fpm www pool
+  ansible.builtin.template:
+    src: php/php-fpm.d/www.conf.j2
+    dest: /etc/php-fpm.d/www.conf
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    listen: "{{ amimoto_php_listen }}"
+    user: "{{ amimoto_php_config_user }}"
+    group: "{{ amimoto_php_config_group }}"
+    listen_backlog: "{{ amimoto_php_listen_backlog }}"
+    pm: "{{ amimoto_php_pm }}"
+    max_children: "{{ amimoto_php_max_children }}"
+    start_servers: "{{ amimoto_php_start_servers }}"
+    min_spare_servers: "{{ amimoto_php_min_spare_servers }}"
+    max_spare_servers: "{{ amimoto_php_max_spare_servers }}"
+    max_requests: "{{ amimoto_php_max_requests }}"
+    rlimit_files: "{{ amimoto_php_rlimit_files }}"
+    rlimit_core: "{{ amimoto_php_rlimit_core }}"
+    request_terminate_timeout: "{{ amimoto_php_request_terminate_timeout }}"
+    request_slowlog_timeout: "{{ amimoto_php_request_slowlog_timeout }}"
+    limit_extensions: "{{ amimoto_php_limit_extensions }}"
+    upload_max_filesize: "{{ amimoto_php_upload_max_filesize }}"
+    post_max_size: "{{ amimoto_php_post_max_size }}"
+    max_execution_time: "{{ amimoto_php_max_execution_time }}"
+    memory_limit: "{{ amimoto_php_memory_limit }}"
+    max_input_vars: "{{ amimoto_php_max_input_vars }}"
+    max_input_time: "{{ amimoto_php_max_input_time }}"
+    max_input_nesting_level: "{{ amimoto_php_max_input_nesting_level }}"
+  notify: Restart php-fpm
+
+- name: Configure OPcache
+  ansible.builtin.template:
+    src: php/php.d/10-opcache.ini.j2
+    dest: /etc/php.d/10-opcache.ini
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart php-fpm
+
+- name: Enable and start php-fpm
+  ansible.builtin.service:
+    name: "{{ amimoto_php_fpm_service_name }}"
+    enabled: true
+    state: "{{ amimoto_defer_service_start | bool | ternary('stopped','started') }}"

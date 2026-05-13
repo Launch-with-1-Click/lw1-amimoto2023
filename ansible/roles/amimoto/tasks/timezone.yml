@@ -1,0 +1,31 @@
+---
+- name: Set /etc/localtime
+  ansible.builtin.file:
+    src: "/usr/share/zoneinfo/{{ amimoto_timezone }}"
+    dest: /etc/localtime
+    state: link
+    force: true
+  notify: Restart rsyslog
+
+- name: Configure /etc/sysconfig/clock when present
+  ansible.builtin.template:
+    src: clock.j2
+    dest: /etc/sysconfig/clock
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    timezone: "{{ amimoto_timezone }}"
+  when: ansible_facts['os_family'] in ['RedHat', 'Amazon']
+
+- name: Check /etc/sysconfig/clock
+  ansible.builtin.stat:
+    path: /etc/sysconfig/clock
+  register: amimoto_clock_stat
+
+- name: Update ZONE in /etc/sysconfig/clock
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/clock
+    regexp: '^ZONE='
+    line: "ZONE=\"{{ amimoto_timezone }}\""
+  when: amimoto_clock_stat.stat.exists

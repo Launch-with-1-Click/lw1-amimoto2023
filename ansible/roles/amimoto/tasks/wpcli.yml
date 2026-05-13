@@ -1,0 +1,49 @@
+---
+- name: Install jq
+  ansible.builtin.dnf:
+    name: jq
+    state: present
+
+- name: Clone wp-cli repository
+  ansible.builtin.git:
+    repo: "{{ amimoto_wpcli_repository }}"
+    dest: "{{ amimoto_wpcli_dir }}"
+    version: "{{ amimoto_wpcli_version }}"
+    update: true
+
+- name: Check wp-cli phar
+  ansible.builtin.stat:
+    path: "{{ amimoto_wpcli_dir }}/phar/wp-cli.phar"
+  register: amimoto_wpcli_phar
+
+- name: Ensure wp-cli phar is executable
+  ansible.builtin.file:
+    path: "{{ amimoto_wpcli_dir }}/phar/wp-cli.phar"
+    mode: "0755"
+  when: amimoto_wpcli_phar.stat.exists
+
+- name: Link wp-cli
+  ansible.builtin.file:
+    src: "{{ amimoto_wpcli_dir }}/phar/wp-cli.phar"
+    dest: "{{ amimoto_wpcli_link }}"
+    state: link
+
+- name: Install wp-setup helper
+  ansible.builtin.template:
+    src: wp-setup.j2
+    dest: /usr/local/bin/wp-setup
+    owner: root
+    group: root
+    mode: "0755"
+  vars:
+    default_server_name: "{{ amimoto_ec2_instance_id }}"
+
+- name: Install wp-setup-json helper
+  ansible.builtin.template:
+    src: wp-setup-json.j2
+    dest: /usr/local/bin/wp-setup-json
+    owner: root
+    group: root
+    mode: "0755"
+  vars:
+    default_server_name: "{{ amimoto_ec2_instance_id }}"

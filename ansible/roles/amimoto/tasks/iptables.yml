@@ -1,0 +1,8 @@
+---
+- name: Disable iptables service when requested
+  ansible.builtin.service:
+    name: iptables
+    state: stopped
+    enabled: false
+  when: amimoto_iptables_disable | bool
+  ignore_errors: true

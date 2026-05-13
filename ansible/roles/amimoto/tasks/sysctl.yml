@@ -1,0 +1,47 @@
+---
+- name: Ensure swappiness is configured
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^vm\.swappiness='
+    line: "vm.swappiness={{ amimoto_sysctl_swappiness }}"
+  notify: Reload sysctl
+
+- name: Create swap file
+  ansible.builtin.command: "dd if=/dev/zero of=/swapfile bs=1024 count={{ amimoto_swapfile_size_mb * 1024 }}"
+  args:
+    creates: /swapfile
+  when: ansible_facts['virtualization_type'] != 'docker'
+
+- name: Set swap file permissions
+  ansible.builtin.file:
+    path: /swapfile
+    owner: root
+    group: root
+    mode: "0600"
+  when: ansible_facts['virtualization_type'] != 'docker'
+
+- name: Make swap
+  ansible.builtin.command: mkswap /swapfile
+  args:
+    creates: /swapfile.swap
+  register: amimoto_mkswap
+  when: ansible_facts['virtualization_type'] != 'docker'
+  changed_when: amimoto_mkswap.rc == 0
+
+- name: Mark swap initialized
+  ansible.builtin.file:
+    path: /swapfile.swap
+    state: touch
+  when: ansible_facts['virtualization_type'] != 'docker'
+
+- name: Enable swap
+  ansible.builtin.command: swapon /swapfile
+  when: ansible_facts['virtualization_type'] != 'docker'
+  failed_when: false
+
+- name: Ensure swap entry in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^/swapfile\\s'
+    line: '/swapfile none swap sw 0 0'
+  when: ansible_facts['virtualization_type'] != 'docker'

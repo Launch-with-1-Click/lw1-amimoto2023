@@ -1,0 +1,34 @@
+server {
+    listen      80;
+    server_name {{ amimoto_pilott_mysql_wildcard | default('*.mysql.pilott.amimoto.io') }};
+    root        /var/www/html;
+    index       index.html index.htm;
+    charset     utf-8;
+
+    access_log  /var/log/nginx/access.log  main;
+    error_log   /var/log/nginx/error.log;
+
+    expires $expires;
+
+    add_header X-Cache-Status $upstream_cache_status;
+    add_header Strict-Transport-Security 'max-age=31536000';
+
+    include     /etc/nginx/drop;
+
+    location = /ping.txt {
+        empty_gif;
+        access_log off;
+        break;
+    }
+
+    location / {
+        return 301 https://{{ amimoto_pilott_mysql_domain }}$request_uri;
+    }
+
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page  502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}

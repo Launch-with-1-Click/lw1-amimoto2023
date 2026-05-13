@@ -1,0 +1,28 @@
+---
+# AMI Build: middleware installation and base configuration
+# WordPress installation is handled by initial.wp-setup.sh at instance launch
+- import_tasks: preflight.yml
+  tags: [preflight, php_switch]
+- import_tasks: instance_tuning.yml
+  tags: [preflight, php_switch]
+- import_tasks: repos.yml
+- import_tasks: base.yml
+- import_tasks: timezone.yml
+- import_tasks: iptables.yml
+- import_tasks: sysctl.yml
+- import_tasks: php.yml
+  tags: php_switch
+- import_tasks: mariadb.yml
+  when: amimoto_mariadb_enabled | bool
+- import_tasks: nginx.yml
+- import_tasks: nginx_default.yml
+- import_tasks: httpd.yml
+- import_tasks: httpd_default.yml
+- import_tasks: memcached.yml
+- import_tasks: redis.yml
+- import_tasks: monit.yml
+  when: amimoto_monit_enabled | bool
+- import_tasks: wpcli.yml
+- import_tasks: phpmyadmin.yml
+- import_tasks: start_services.yml
+- import_tasks: update_motd.yml

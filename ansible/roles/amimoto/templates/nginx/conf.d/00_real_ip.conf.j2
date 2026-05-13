@@ -1,0 +1,19 @@
+# VPC
+{% for vpc_ip in vpc_ips %}
+set_real_ip_from {{ vpc_ip }};
+{% endfor %}
+
+# CloudFront
+{% for cf_ip in cf_ips %}
+set_real_ip_from {{ cf_ip }};
+{% endfor %}
+
+# Self
+set_real_ip_from 127.0.0.1/32;
+set_real_ip_from unix:;
+
+# Ignore trusted IPs
+real_ip_recursive on;
+
+# Look for client IP in the X-Forwarded-For header
+real_ip_header  X-Forwarded-For;

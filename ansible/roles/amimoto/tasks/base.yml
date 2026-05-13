@@ -1,0 +1,108 @@
+---
+- name: Install base packages
+  ansible.builtin.dnf:
+    name: "{{ amimoto_base_packages }}"
+    state: present
+
+- name: Configure i18n
+  ansible.builtin.template:
+    src: i18n.j2
+    dest: /etc/sysconfig/i18n
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure web group exists
+  ansible.builtin.group:
+    name: "{{ amimoto_web_group }}"
+    state: present
+
+- name: Ensure web user exists
+  ansible.builtin.user:
+    name: "{{ amimoto_web_user }}"
+    group: "{{ amimoto_web_group }}"
+    system: true
+    create_home: false
+    shell: /sbin/nologin
+  when: amimoto_web_user != "amimoto-user"
+
+- name: Ensure amimoto-user group exists
+  ansible.builtin.group:
+    name: amimoto-user
+    state: present
+
+- name: Ensure amimoto-user exists
+  ansible.builtin.user:
+    name: amimoto-user
+    group: amimoto-user
+    groups: "{{ amimoto_web_group }}"
+    append: true
+    system: true
+    create_home: true
+    shell: /bin/bash
+
+- name: Ensure amimoto-user bin directory exists
+  ansible.builtin.file:
+    path: /home/amimoto-user/bin
+    state: directory
+    owner: amimoto-user
+    group: amimoto-user
+    mode: "0755"
+
+- name: Ensure /var/www/html ownership
+  ansible.builtin.file:
+    path: /var/www/html
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure /var/www/vhosts ownership
+  ansible.builtin.file:
+    path: /var/www/vhosts
+    state: directory
+    owner: "{{ amimoto_nginx_config_user }}"
+    group: "{{ amimoto_nginx_config_group }}"
+    mode: "0755"
+
+- name: Ensure root bin directory exists
+  ansible.builtin.file:
+    path: /root/bin
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Schedule weekly reboot (root)
+  ansible.builtin.cron:
+    name: "reboot"
+    user: root
+    minute: "0"
+    hour: "3"
+    day: "*"
+    month: "*"
+    weekday: "1"
+    job: "/usr/sbin/reboot > /dev/null 2>&1"
+
+- name: Set ec2-user primary group
+  ansible.builtin.user:
+    name: ec2-user
+    group: "{{ amimoto_web_group }}"
+
+- name: Ensure ec2-user is in web group
+  ansible.builtin.user:
+    name: ec2-user
+    groups: "{{ amimoto_web_group }}"
+    append: true
+
+- name: Enable and start rsyslog
+  ansible.builtin.service:
+    name: rsyslog
+    enabled: true
+    state: started
+
+- name: Enable and start crond
+  ansible.builtin.service:
+    name: crond
+    enabled: true
+    state: started

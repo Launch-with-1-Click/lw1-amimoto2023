@@ -1,0 +1,46 @@
+server {
+    listen      80;
+    server_name *.mysql.pilott.amimoto.io;
+    root        /var/www/html;
+    index       index.html index.htm;
+    charset     utf-8;
+
+    access_log  /var/log/nginx/access.log  main;
+    error_log   /var/log/nginx/error.log;
+
+    expires $expires;
+
+    add_header X-Cache-Status $upstream_cache_status;
+    add_header Strict-Transport-Security 'max-age=31536000';
+
+    include     /etc/nginx/drop;
+
+    location = /ping.txt {
+        empty_gif;
+        access_log off;
+        break;
+    }
+
+    set $proxy_proto $scheme;
+    if ( $http_x_forwarded_proto = 'https' ) {
+        set $proxy_proto $http_x_forwarded_proto;
+    }
+    if ( $http_x_forwarded_port = '443' ) {
+        set $proxy_proto 'https';
+    }
+    if ( $http_cloudfront_forwarded_proto = 'https' ) {
+        set $proxy_proto $http_cloudfront_forwarded_proto;
+    }
+    if ( $proxy_proto = 'http' ) {
+        return 301 https://$host$request_uri;
+        break;
+    }
+
+    include     /etc/nginx/phpmyadmin;
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page  502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}

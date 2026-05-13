@@ -1,0 +1,66 @@
+server {
+    {% if server_name == amimoto_ec2_instance_id %}
+    listen      {{ listen }} default ssl http2;
+    server_name _;
+    {% else %}
+    listen      {{ listen }} ssl http2;
+    server_name {{ server_name }}{% if cf_domain is defined and cf_domain %} {{ cf_domain }}{% endif %};
+    {% endif %}
+    root        {{ document_root }};
+    index       index.html index.htm;
+    charset     utf-8;
+
+    ssl_protocols       TLSv1.1 TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers         AESGCM:HIGH:!aNULL:!MD5;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 5m;
+    ssl_certificate     /etc/pki/tls/certs/amimoto.default.crt;
+    ssl_certificate_key /etc/pki/tls/private/amimoto.default.key;
+
+    access_log  /var/log/nginx/{{ server_name }}-ssl.access.log  main;
+    error_log   /var/log/nginx/{{ server_name }}-ssl.error.log;
+
+    include     /etc/nginx/drop;
+
+    add_header X-Cache-Status $upstream_cache_status;
+    expires $expires;
+
+    set $mobile '';
+    {% if mobile_detect_enable %}
+    include /etc/nginx/mobile-detect;
+    {% else %}
+    #include /etc/nginx/mobile-detect;
+    {% endif %}
+
+    include     /etc/nginx/wp-front;
+
+    {% if server_name == amimoto_ec2_instance_id %}
+    {% if phpmyadmin_enable %}
+    # phpMyAdmin
+    include     /etc/nginx/phpmyadmin;
+    {% else %}
+    #
+    # When you use phpMyAdmin, uncomment the line "include /etc/nginx/phpmyadmin;"
+    # and delete or comment out the below line "location ~* /(phpmyadmin|myadmin|pma) { }".
+    #
+    #include     /etc/nginx/phpmyadmin;
+    location ~* /(phpmyadmin|myadmin|pma) { access_log off; log_not_found off; return 404; }
+    {% endif %}
+    {% else %}
+    location ~* /(phpmyadmin|myadmin|pma) { access_log off; log_not_found off; return 404; }
+    {% endif %}
+
+    #
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page  502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    location = /ping.txt {
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+}

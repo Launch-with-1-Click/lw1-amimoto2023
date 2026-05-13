@@ -1,0 +1,6 @@
+---
+- name: Configure AMIMOTO AMI on Amazon Linux 2023
+  hosts: amimoto
+  become: true
+  roles:
+    - amimoto

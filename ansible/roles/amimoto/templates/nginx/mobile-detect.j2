@@ -1,0 +1,24 @@
+set $mobile_off '';
+if ($http_user_agent ~* '{{ ua_ktai }}') {
+    set $mobile "@ktai";
+}
+if ($http_user_agent ~* '{{ ua_smartphone }}') {
+    set $mobile "@smartphone";
+}
+if ( $http_cloudfront_is_mobile_viewer = 'true' ) {
+    set $mobile '@smartphone';
+}
+if ( $http_cloudfront_is_tablet_viewer = 'true' ) {
+    set $mobile '';
+}
+if ($http_cookie ~* "{{ ua_smartphone_off }}") {
+    set $mobile_off "${mobile}.off";
+}
+if ($mobile_off = "@smartphone.off") {
+    set $mobile "@smartphone.off";
+}
+
+location ~* @(ktai|smartphone|smartphone\.off)$ {
+    access_log off;
+    return 404;
+}

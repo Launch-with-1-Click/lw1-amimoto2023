@@ -1,0 +1,57 @@
+---
+- name: Install monit
+  ansible.builtin.dnf:
+    name: monit
+    state: present
+
+- name: Enable and start monit
+  ansible.builtin.service:
+    name: monit
+    enabled: true
+    state: "{{ amimoto_defer_service_start | bool | ternary('stopped','started') }}"
+
+- name: Configure monit.conf
+  ansible.builtin.template:
+    src: monit/monit.conf.j2
+    dest: "{{ amimoto_monit_config_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  vars:
+    alert: "{{ amimoto_monit_alert }}"
+  notify: Restart monit
+
+- name: Configure monit logrotate
+  ansible.builtin.template:
+    src: logrotat.d/monit.j2
+    dest: /etc/logrotate.d/monit
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure monit service checks
+  ansible.builtin.template:
+    src: "{{ amimoto_monit_template_map[item.name] }}"
+    dest: "{{ amimoto_monit_config_dir }}/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    name: "{{ item.name }}"
+    pidfile: "{{ item.pidfile | default('') }}"
+    start: "{{ item.start | default('') }}"
+    stop: "{{ item.stop | default('') }}"
+    user: "{{ item.user | default('') }}"
+    group: "{{ item.group | default('') }}"
+    rules: "{{ item.rules | default([]) }}"
+  loop: "{{ amimoto_monit_processes }}"
+  when: amimoto_monit_monitor[item.name] | bool
+  notify: Reload monit
+
+- name: Remove disabled monit checks
+  ansible.builtin.file:
+    path: "{{ amimoto_monit_config_dir }}/{{ item.name }}"
+    state: absent
+  loop: "{{ amimoto_monit_processes }}"
+  when: not (amimoto_monit_monitor[item.name] | bool)
+  notify: Reload monit

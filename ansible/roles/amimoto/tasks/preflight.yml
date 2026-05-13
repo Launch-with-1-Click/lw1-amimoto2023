@@ -1,0 +1,166 @@
+---
+- name: Assert Amazon Linux 2023
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Amazon'
+      - ansible_facts['distribution_major_version'] == '2023'
+    fail_msg: "This role supports Amazon Linux 2023 only."
+  tags: preflight
+
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: /var/log/amimoto
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [preflight, php_switch]
+
+- name: Fetch IMDSv2 token when instance type is missing
+  ansible.builtin.command: >-
+    curl -s -X PUT "http://169.254.169.254/latest/api/token"
+    -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"
+  register: amimoto_imds_token
+  changed_when: false
+  failed_when: false
+  when: ansible_facts.get('ec2_instance_type', '') | length == 0
+  tags: preflight
+
+- name: Fetch instance type from IMDSv2 when missing
+  ansible.builtin.command: >-
+    curl -s -H "X-aws-ec2-metadata-token: {{ amimoto_imds_token.stdout }}"
+    http://169.254.169.254/latest/meta-data/instance-type
+  register: amimoto_imds_instance_type
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_facts.get('ec2_instance_type', '') | length == 0
+    - amimoto_imds_token.stdout | length > 0
+  tags: preflight
+
+- name: Set instance type fact from IMDSv2 when missing
+  ansible.builtin.set_fact:
+    amimoto_ec2_instance_type: "{{ amimoto_imds_instance_type.stdout }}"
+  when:
+    - ansible_facts.get('ec2_instance_type', '') | length == 0
+    - amimoto_imds_instance_type.stdout | length > 0
+  tags: preflight
+
+- name: Debug instance type in preflight
+  ansible.builtin.debug:
+    var: amimoto_ec2_instance_type
+  tags: preflight
+
+- name: Derive region from availability zone when missing
+  ansible.builtin.set_fact:
+    amimoto_ec2_region: "{{ ansible_facts.get('ec2_placement_availability_zone', '')[:-1] }}"
+  when: amimoto_ec2_region | length == 0 and ansible_facts.get('ec2_placement_availability_zone', '') | length > 1
+  tags: [preflight, php_switch]
+
+- name: Set timezone from region map when unset
+  ansible.builtin.set_fact:
+    amimoto_timezone: "{{ amimoto_region_timezone_map[amimoto_ec2_region] }}"
+  when: amimoto_timezone == 'UTC' and amimoto_ec2_region in amimoto_region_timezone_map
+  tags: preflight
+
+- name: Fetch PHP version from SSM Parameter Store
+  ansible.builtin.command: >-
+    aws ssm get-parameter
+    --name "{{ amimoto_ssm_php_version_parameter }}"
+    --region "{{ amimoto_ec2_region }}"
+    --query "Parameter.Value"
+    --output text
+  register: amimoto_ssm_php_version_result
+  changed_when: false
+  failed_when: false
+  when:
+    - amimoto_ssm_php_version_parameter | length > 0
+    - amimoto_ec2_region | length > 0
+  tags: [preflight, php_switch]
+
+- name: Set PHP version from SSM when available
+  ansible.builtin.set_fact:
+    amimoto_php_version: "{{ amimoto_ssm_php_version_result.stdout | trim }}"
+  when:
+    - amimoto_ssm_php_version_result is defined
+    - amimoto_ssm_php_version_result.rc | default(1) == 0
+    - amimoto_ssm_php_version_result.stdout | default('') | trim | length > 0
+  tags: [preflight, php_switch]
+
+- name: Rebuild PHP packages list with updated version
+  ansible.builtin.set_fact:
+    amimoto_php_packages:
+      - "php{{ amimoto_php_version }}"
+      - "php{{ amimoto_php_version }}-common"
+      - "php{{ amimoto_php_version }}-cli"
+      - "php{{ amimoto_php_version }}-fpm"
+      - "php{{ amimoto_php_version }}-mbstring"
+      - "php{{ amimoto_php_version }}-gd"
+      - "php-pear"
+      - "php{{ amimoto_php_version }}-xml"
+      - "php{{ amimoto_php_version }}-soap"
+      - "php{{ amimoto_php_version }}-mysqlnd"
+      - "php{{ amimoto_php_version }}-pdo"
+      - "php{{ amimoto_php_version }}-opcache"
+      - "php{{ amimoto_php_version }}-bcmath"
+      - "php{{ amimoto_php_version }}-intl"
+      - "php{{ amimoto_php_version }}-devel"
+  tags: [preflight, php_switch]
+
+- name: Fetch CF distribution ID from SSM Parameter Store
+  ansible.builtin.command: >-
+    aws ssm get-parameter
+    --name "{{ amimoto_ssm_cf_distribution_id_parameter }}"
+    --region "{{ amimoto_ec2_region }}"
+    --query "Parameter.Value"
+    --output text
+  register: amimoto_ssm_cf_distribution_id_result
+  changed_when: false
+  failed_when: false
+  when:
+    - amimoto_ssm_cf_distribution_id_parameter | length > 0
+    - amimoto_ec2_region | length > 0
+  tags: preflight
+
+- name: Set CF distribution ID from SSM when available
+  ansible.builtin.set_fact:
+    amimoto_wordpress_cf_distribution_id: "{{ amimoto_ssm_cf_distribution_id_result.stdout | trim }}"
+  when:
+    - amimoto_ssm_cf_distribution_id_result is defined
+    - amimoto_ssm_cf_distribution_id_result.rc | default(1) == 0
+    - amimoto_ssm_cf_distribution_id_result.stdout | default('') | trim | length > 0
+  tags: preflight
+
+- name: Fetch CF domain from SSM Parameter Store
+  ansible.builtin.command: >-
+    aws ssm get-parameter
+    --name "{{ amimoto_ssm_cf_domain_parameter }}"
+    --region "{{ amimoto_ec2_region }}"
+    --query "Parameter.Value"
+    --output text
+  register: amimoto_ssm_cf_domain_result
+  changed_when: false
+  failed_when: false
+  when:
+    - amimoto_ssm_cf_domain_parameter | length > 0
+    - amimoto_ec2_region | length > 0
+  tags: preflight
+
+- name: Set CF domain from SSM when available
+  ansible.builtin.set_fact:
+    amimoto_wordpress_cf_domain: "{{ amimoto_ssm_cf_domain_result.stdout | trim }}"
+  when:
+    - amimoto_ssm_cf_domain_result is defined
+    - amimoto_ssm_cf_domain_result.rc | default(1) == 0
+    - amimoto_ssm_cf_domain_result.stdout | default('') | trim | length > 0
+  tags: preflight
+
+- name: Debug PHP version
+  ansible.builtin.debug:
+    msg: "PHP version: {{ amimoto_php_version }}"
+  tags: [preflight, php_switch]
+
+- name: Debug PHP packages
+  ansible.builtin.debug:
+    var: amimoto_php_packages
+  tags: [preflight, php_switch]

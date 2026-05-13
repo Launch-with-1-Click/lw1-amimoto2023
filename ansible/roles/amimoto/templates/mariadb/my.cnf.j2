@@ -1,0 +1,61 @@
+[mysqld]
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+pid-file={{ pid_path }}
+
+user={{ user }}
+# Disabling symbolic-links is recommended to prevent assorted security risks
+symbolic-links=0
+character-set-server = utf8
+explicit_defaults_for_timestamp=1
+default-storage-engine=InnoDB
+default_password_lifetime=0
+
+innodb_strict_mode
+innodb_file_per_table
+# innodb_file_format = {{ innodb_file_format }}
+# innodb_file_format_max = {{ innodb_file_format_max }}
+# innodb_use_sys_malloc
+innodb_buffer_pool_size={{ innodb_buffer_pool_size }}
+innodb_write_io_threads = 4
+innodb_read_io_threads = 4
+innodb_thread_concurrency = 16
+innodb_log_file_size={{ innodb_log_file_size }}
+innodb_flush_log_at_trx_commit = 2
+innodb_flush_method=O_DIRECT
+innodb_fast_shutdown = 0
+innodb_buffer_pool_dump_at_shutdown = 1
+innodb_buffer_pool_load_at_startup = 1
+innodb_buffer_pool_instances = {{ innodb_buffer_pool_instances }}
+
+query_cache_size={{ query_cache_size }}
+query_cache_limit=2M
+query_cache_min_res_unit=4k
+query_cache_type=1
+
+tmp_table_size={{ tmp_table_size }}
+max_heap_table_size={{ tmp_table_size }}
+
+table_open_cache={{ table_open_cache }}
+max_allowed_packet={{ max_allowed_packet }}
+sort_buffer_size={{ sort_buffer_size }}
+read_buffer_size={{ read_buffer_size }}
+read_rnd_buffer_size={{ read_rnd_buffer_size }}
+join_buffer_size={{ join_buffer_size }}
+key_buffer_size=16M
+
+max_connections={{ max_connections }}
+thread_cache_size={{ thread_cache }}
+
+slow_query_log
+slow_query_log_file={{ slow_log_path }}
+long_query_time=1
+
+log-error={{ error_log_path }}
+
+wait_timeout=60
+sql_mode={{ sql_mode }}
+
+[mysqld_safe]
+log-error={{ error_log_path }}
+pid-file={{ pid_path }}

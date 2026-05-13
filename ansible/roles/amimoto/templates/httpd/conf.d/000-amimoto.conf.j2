@@ -1,0 +1,34 @@
+ServerTokens OS
+Timeout 60
+KeepAlive On
+MaxKeepAliveRequests {{ max_keep_alive_requests }}
+KeepAliveTimeout {{ keep_alive_timeout }}
+HostnameLookups Off
+ServerSignature On
+
+<Directory "{{ amimoto_wordpress_document_root }}">
+    DirectoryIndex index.html index.htm index.php
+    Options -Indexes +FollowSymLinks
+    AllowOverride {{ allow_override }}
+    Require all granted
+</Directory>
+
+<IfModule prefork.c>
+StartServers      {{ amimoto_nginx_config_upstream_keepalive | int + 2 }}
+MinSpareServers   {{ amimoto_nginx_config_upstream_keepalive | int + 2 }}
+MaxSpareServers   {{ amimoto_nginx_config_upstream_keepalive | int + 2 }}
+ServerLimit       {{ amimoto_nginx_config_upstream_keepalive | int + 2 }}
+MaxClients        {{ amimoto_nginx_config_upstream_keepalive | int + 2 }}
+MaxRequestWorkers {{ amimoto_nginx_config_upstream_keepalive | int + 2 }}
+MaxRequestsPerChild {{ max_requests_per_child }}
+</IfModule>
+
+<IfModule worker.c>
+StartServers         4
+MaxClients         300
+MaxRequestWorkers  300
+MinSpareThreads     25
+MaxSpareThreads     75
+ThreadsPerChild     25
+MaxRequestsPerChild  0
+</IfModule>

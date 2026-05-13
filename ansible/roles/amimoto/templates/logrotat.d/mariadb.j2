@@ -1,0 +1,27 @@
+{{ error_log_path }} {
+    create 600 {{ user }} {{ group }}
+    notifempty
+    daily
+    rotate 5
+    missingok
+    compress
+    postrotate
+        # just if mariadb is really running
+        if test -x /usr/bin/mariadb-admin && \
+           /usr/bin/mariadb-admin ping &>/dev/null
+        then
+           /usr/bin/mariadb-admin flush-logs
+        fi
+    endscript
+}
+
+{{ slow_log_path }} {
+    create 600 {{ user }} {{ group }}
+    notifempty
+    daily
+    rotate 5
+    missingok
+    compress
+    postrotate
+    endscript
+}

@@ -1,0 +1,20 @@
+---
+- name: Remove epel-release if present (AL2023 does not support EPEL)
+  ansible.builtin.package:
+    name: epel-release
+    state: absent
+  ignore_errors: true
+
+- name: Install SPAL release package
+  ansible.builtin.dnf:
+    name: spal-release
+    state: present
+
+- name: Configure amimoto nginx repository
+  ansible.builtin.template:
+    src: yum/amimoto-nginx-mainline.repo.j2
+    dest: /etc/yum.repos.d/amimoto-nginx-mainline.repo
+    owner: root
+    group: root
+    mode: "0644"
+  when: amimoto_nginx_repo_enabled | bool

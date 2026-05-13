@@ -1,0 +1,51 @@
+---
+- name: Restart php-fpm
+  ansible.builtin.service:
+    name: "{{ amimoto_php_fpm_service_name }}"
+    state: restarted
+
+- name: Restart nginx
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+
+- name: Reload nginx
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+
+- name: Restart httpd
+  ansible.builtin.service:
+    name: httpd
+    state: restarted
+
+- name: Restart mariadb
+  ansible.builtin.service:
+    name: "{{ amimoto_mariadb_service_name }}"
+    state: restarted
+
+- name: Restart redis
+  ansible.builtin.service:
+    name: "{{ amimoto_redis_service_name }}"
+    state: restarted
+
+- name: Restart monit
+  ansible.builtin.service:
+    name: monit
+    state: restarted
+
+- name: Reload monit
+  ansible.builtin.service:
+    name: monit
+    state: reloaded
+
+- name: Reload sysctl
+  ansible.builtin.command: sysctl -e -p
+
+- name: Restart rsyslog
+  ansible.builtin.service:
+    name: rsyslog
+    state: restarted
+
+- name: Update motd
+  ansible.builtin.command: update-motd

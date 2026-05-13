@@ -1,0 +1,39 @@
+---
+- name: Configure default nginx site
+  ansible.builtin.template:
+    src: "nginx/conf.d/{{ item }}.j2"
+    dest: "/etc/nginx/conf.d/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    listen: "{{ amimoto_nginx_config_listen }}"
+    listen_backend: "{{ amimoto_nginx_config_listen_backend }}"
+    server_name: "{{ amimoto_ec2_instance_id }}"
+    document_root: "{{ amimoto_wordpress_document_root }}"
+    wp_multisite: "{{ amimoto_nginx_config_wp_multisite }}"
+    mobile_detect_enable: "{{ amimoto_nginx_config_mobile_detect_enable }}"
+    phpmyadmin_enable: "{{ amimoto_nginx_config_phpmyadmin_enable }}"
+  loop:
+    - default.conf
+    - default.backend.conf
+  when: amimoto_nginx_enabled | bool
+  notify: Restart nginx
+
+- name: Configure default nginx SSL site
+  ansible.builtin.template:
+    src: nginx/conf.d/default-ssl.conf.j2
+    dest: /etc/nginx/conf.d/default-ssl.conf
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    listen: "{{ amimoto_nginx_config_listen_ssl }}"
+    listen_backend: "{{ amimoto_nginx_config_listen_backend }}"
+    server_name: "{{ amimoto_ec2_instance_id }}"
+    document_root: "{{ amimoto_wordpress_document_root }}"
+    wp_multisite: "{{ amimoto_nginx_config_wp_multisite }}"
+    mobile_detect_enable: "{{ amimoto_nginx_config_mobile_detect_enable }}"
+    phpmyadmin_enable: "{{ amimoto_nginx_config_phpmyadmin_enable }}"
+  when: amimoto_nginx_enabled | bool and amimoto_nginx_http2_enable | bool
+  notify: Restart nginx

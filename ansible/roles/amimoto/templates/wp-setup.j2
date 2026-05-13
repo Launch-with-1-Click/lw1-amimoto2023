@@ -1,0 +1,40 @@
+#!/bin/sh
+if [ $# -ne 0 ]; then
+  SITENAME=$1
+else
+  SITENAME="{{ default_server_name }}"
+fi
+
+if [ -f /var/www/vhosts/$SITENAME/wp-config.php ]; then
+  exit 0
+fi
+
+echo "start..."
+echo ""
+
+if [ ! -f /usr/bin/chef-solo ]; then
+  ln -s /opt/chef/bin/chef-solo /usr/bin/chef-solo
+fi
+
+cd /opt/local
+if [ -f /usr/local/bin/wp-setup-json ]; then
+  if [ ! -f /opt/local/${SITENAME}.json ]; then
+    /usr/local/bin/wp-setup-json ${SITENAME} | /usr/bin/jq '.' > /opt/local/${SITENAME}.json
+    chmod 0600 /opt/local/${SITENAME}.json
+  fi
+  /bin/cp -r /opt/local/${SITENAME}.json /tmp/wp-setup.json
+  if [ -f /opt/local/amimoto-managed.json ]; then
+    /usr/bin/jq -s '.[0] * .[1]' /opt/local/${SITENAME}.json /opt/local/amimoto-managed.json > /tmp/wp-setup.json
+  elif [ -f /opt/local/amimoto.json ]; then
+    /usr/bin/jq -s '.[0] * .[1]' /opt/local/${SITENAME}.json /opt/local/amimoto.json > /tmp/wp-setup.json
+  fi
+  /usr/bin/chef-solo -o amimoto::wordpress -c /opt/local/solo.rb -j /tmp/wp-setup.json -l error
+fi
+/bin/rm -rf /tmp/.cache/wpplugins
+/bin/rm -rf /tmp/.cache/wpthemes
+/bin/rm -f /tmp/wp-setup.json
+
+/sbin/service nginx reload
+
+echo ""
+echo "...done"

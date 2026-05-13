@@ -1,0 +1,26 @@
+check process {{ name }}
+{% if pidfile %}
+  with pidfile {{ pidfile }}
+{% else %}
+  matching "{{ name }}"
+{% endif %}
+  start program = "{{ start }}"
+  stop program = "{{ stop }} || /usr/bin/killall nginx"
+{% for rule in rules %}
+  {{ rule }}
+{% endfor %}
+
+check directory nginx_cache with path "/var/cache/nginx"
+  if failed uid {{ user }} then exec "/bin/chown -R {{ user }}:{{ group }} /var/cache/nginx"
+
+check directory nginx_lib with path "/var/lib/nginx"
+  if failed uid {{ user }} then exec "/bin/chown -R {{ user }}:{{ group }} /var/lib/nginx"
+
+check directory nginx_lib_tmp with path "/var/lib/nginx/tmp"
+  if failed uid {{ user }} then exec "/bin/chown -R {{ user }}:{{ group }} /var/lib/nginx/tmp"
+
+check directory nginx_log with path "/var/log/nginx"
+  if failed uid {{ user }} then exec "/bin/chown -R {{ user }}:{{ group }} /var/log/nginx"
+
+check directory option_amimoto with path "/opt/local/amimoto"
+  if failed uid {{ user }} then exec "/bin/chown -R {{ user }}:{{ group }} /opt/local/amimoto"

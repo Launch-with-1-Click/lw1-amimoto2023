@@ -1,0 +1,14 @@
+check process {{ name }}
+{% if pidfile %}
+  with pidfile {{ pidfile }}
+{% else %}
+  matching "{{ name }}"
+{% endif %}
+  start program = "{{ start }}"
+  stop program = "{{ stop }}"
+{% for rule in rules %}
+  {{ rule }}
+{% endfor %}
+
+check directory httpd_log with path "/var/log/httpd"
+  if failed uid {{ user }} then exec "/bin/chown -R {{ user }}:{{ group }} /var/log/httpd"

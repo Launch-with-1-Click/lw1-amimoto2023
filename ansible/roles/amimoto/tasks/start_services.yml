@@ -1,0 +1,42 @@
+---
+- name: Start php-fpm
+  ansible.builtin.service:
+    name: "{{ amimoto_php_fpm_service_name }}"
+    state: started
+  when: amimoto_defer_service_start | bool
+
+- name: Start nginx
+  ansible.builtin.service:
+    name: nginx
+    state: "{{ amimoto_nginx_enabled | bool | ternary('started','stopped') }}"
+  when: amimoto_defer_service_start | bool
+
+- name: Start httpd
+  ansible.builtin.service:
+    name: httpd
+    state: "{{ amimoto_httpd_enabled | bool | ternary('started','stopped') }}"
+  when: amimoto_defer_service_start | bool
+
+- name: Start memcached
+  ansible.builtin.service:
+    name: memcached
+    state: started
+  when:
+    - amimoto_defer_service_start | bool
+    - amimoto_memcached_enabled | bool
+
+- name: Start redis
+  ansible.builtin.service:
+    name: "{{ amimoto_redis_service_name }}"
+    state: started
+  when:
+    - amimoto_defer_service_start | bool
+    - amimoto_redis_enabled | bool
+
+- name: Start monit
+  ansible.builtin.service:
+    name: monit
+    state: started
+  when:
+    - amimoto_defer_service_start | bool
+    - amimoto_monit_enabled | bool

@@ -1,0 +1,27 @@
+# Ansible specific
+*.retry
+.vault_pass
+vault_vars.yml
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Editor specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.log
+
+# Sensitive data
+group_vars/vault.yml
+host_vars/*/vault.yml
+
+# Local configuration
+.kitchen.local.yml
+ansible.cfg.local
