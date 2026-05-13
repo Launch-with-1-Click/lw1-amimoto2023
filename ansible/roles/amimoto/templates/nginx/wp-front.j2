@@ -32,7 +32,7 @@
     proxy_cache_bypass $do_not_cache;
 
     proxy_redirect     off;
-    #proxy_cache        czone;
+    proxy_cache        czone;
 
     proxy_set_header  Host               $host;
     proxy_set_header  X-Real-IP          $remote_addr;
