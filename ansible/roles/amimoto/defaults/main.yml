@@ -264,7 +264,7 @@ amimoto_httpd_config_max_keep_alive_requests: 2500
 amimoto_httpd_config_keep_alive_timeout: 5
 
 # PHP
-amimoto_php_version: "8.3"
+amimoto_php_version: "8.5"
 amimoto_ssm_php_version_parameter: ""
 amimoto_php_packages:
   - "php{{ amimoto_php_version }}"
