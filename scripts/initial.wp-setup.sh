@@ -103,7 +103,7 @@ DB_USER="wp_$(echo ${SERVERNAME} | tr '-' '_' | cut -c1-13)"
 DB_PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
 mariadb -u root -e "CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;" 2>/dev/null || true
-mariadb -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';" 2>/dev/null || true
+mariadb -u root -e "CREATE OR REPLACE USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';" 2>/dev/null || true
 mariadb -u root -e "GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'localhost'; FLUSH PRIVILEGES;" 2>/dev/null || true
 
 cd /var/www/vhosts/${SERVERNAME}
@@ -135,6 +135,10 @@ if ! ${WP_CLI} --allow-root core is-installed --path=/var/www/vhosts/${SERVERNAM
     --admin_password="${SERVERNAME}" \
     --skip-email \
     --path=/var/www/vhosts/${SERVERNAME}
+
+  # install plugins
+  ${WP_CLI} --allow-root plugin install c3-cloudfront-clear-cache --activate --path=/var/www/vhosts/${SERVERNAME}
+  ${WP_CLI} --allow-root plugin install amimoto-dashboard --activate --path=/var/www/vhosts/${SERVERNAME}
 
   # fix ownership
   /bin/chown -R amimoto-user:www /var/www/vhosts/${SERVERNAME}
