@@ -95,7 +95,7 @@ mkdir -p /var/log/amimoto
 WP_CLI="/usr/local/bin/wp"
 
 cd /var/www/vhosts/${SERVERNAME}
-if ! sudo -u amimoto-user ${WP_CLI} core is-installed 2>/dev/null; then
+if ! ${WP_CLI} --allow-root core is-installed --path=/var/www/vhosts/${SERVERNAME} 2>/dev/null; then
   # download WordPress
   sudo -u amimoto-user ${WP_CLI} core download --locale=ja --path=/var/www/vhosts/${SERVERNAME}
 
@@ -106,8 +106,8 @@ if ! sudo -u amimoto-user ${WP_CLI} core is-installed 2>/dev/null; then
     --dbhost="localhost" \
     --path=/var/www/vhosts/${SERVERNAME}
 
-  # create database
-  sudo -u amimoto-user ${WP_CLI} db create --path=/var/www/vhosts/${SERVERNAME} 2>/dev/null || true
+  # create database (root for unix_socket auth)
+  ${WP_CLI} --allow-root db create --path=/var/www/vhosts/${SERVERNAME} 2>/dev/null || true
 
   # determine URL
   if [ -n "${PUBLIC_IPV4}" ] && ! echo "${PUBLIC_IPV4}" | grep -q "Not Found"; then
@@ -117,7 +117,7 @@ if ! sudo -u amimoto-user ${WP_CLI} core is-installed 2>/dev/null; then
   fi
 
   # install WordPress
-  sudo -u amimoto-user ${WP_CLI} core install \
+  ${WP_CLI} --allow-root core install \
     --url="http://${WP_URL}" \
     --title="AMIMOTO WordPress" \
     --admin_user="admin" \
@@ -125,6 +125,9 @@ if ! sudo -u amimoto-user ${WP_CLI} core is-installed 2>/dev/null; then
     --admin_password="${SERVERNAME}" \
     --skip-email \
     --path=/var/www/vhosts/${SERVERNAME}
+
+  # fix ownership
+  /bin/chown -R amimoto-user:www /var/www/vhosts/${SERVERNAME}
 fi
 
 # cleanup placeholder
