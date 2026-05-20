@@ -32,6 +32,7 @@ http {
     access_log  /var/log/nginx/badactor.log proxylog if=$http_proxy;
 
     server_name_in_redirect off;
+    server_names_hash_bucket_size 128;
     server_tokens      off;
 
     sendfile           on;
