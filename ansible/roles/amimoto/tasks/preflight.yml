@@ -63,48 +63,8 @@
   when: amimoto_timezone == 'UTC' and amimoto_ec2_region in amimoto_region_timezone_map
   tags: preflight
 
-- name: Fetch PHP version from SSM Parameter Store
-  ansible.builtin.command: >-
-    aws ssm get-parameter
-    --name "{{ amimoto_ssm_php_version_parameter }}"
-    --region "{{ amimoto_ec2_region }}"
-    --query "Parameter.Value"
-    --output text
-  register: amimoto_ssm_php_version_result
-  changed_when: false
-  failed_when: false
-  when:
-    - amimoto_ssm_php_version_parameter | length > 0
-    - amimoto_ec2_region | length > 0
-  tags: [preflight, php_switch]
-
-- name: Set PHP version from SSM when available
-  ansible.builtin.set_fact:
-    amimoto_php_version: "{{ amimoto_ssm_php_version_result.stdout | trim }}"
-  when:
-    - amimoto_ssm_php_version_result is defined
-    - amimoto_ssm_php_version_result.rc | default(1) == 0
-    - amimoto_ssm_php_version_result.stdout | default('') | trim | length > 0
-  tags: [preflight, php_switch]
-
-- name: Rebuild PHP packages list with updated version
-  ansible.builtin.set_fact:
-    amimoto_php_packages:
-      - "php{{ amimoto_php_version }}"
-      - "php{{ amimoto_php_version }}-common"
-      - "php{{ amimoto_php_version }}-cli"
-      - "php{{ amimoto_php_version }}-fpm"
-      - "php{{ amimoto_php_version }}-mbstring"
-      - "php{{ amimoto_php_version }}-gd"
-      - "php-pear"
-      - "php{{ amimoto_php_version }}-xml"
-      - "php{{ amimoto_php_version }}-soap"
-      - "php{{ amimoto_php_version }}-mysqlnd"
-      - "php{{ amimoto_php_version }}-pdo"
-      - "php{{ amimoto_php_version }}-opcache"
-      - "php{{ amimoto_php_version }}-bcmath"
-      - "php{{ amimoto_php_version }}-intl"
-      - "php{{ amimoto_php_version }}-devel"
+# PHP version resolution: amimoto.json > SSM > default (see php_version.yml)
+- ansible.builtin.import_tasks: php_version.yml
   tags: [preflight, php_switch]
 
 - name: Fetch CF distribution ID from SSM Parameter Store

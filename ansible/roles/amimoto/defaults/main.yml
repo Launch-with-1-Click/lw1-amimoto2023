@@ -266,6 +266,8 @@ amimoto_httpd_config_keep_alive_timeout: 5
 # PHP
 amimoto_php_version: "8.5"
 amimoto_ssm_php_version_parameter: ""
+# Local override file (wins over SSM and the default above). Travels with the AMI.
+amimoto_local_config_path: "/opt/local/amimoto.json"
 amimoto_php_packages:
   - "php{{ amimoto_php_version }}"
   - "php{{ amimoto_php_version }}-common"

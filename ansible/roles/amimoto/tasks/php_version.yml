@@ -1,0 +1,78 @@
+---
+# Resolve amimoto_php_version with priority: amimoto.json > SSM > default.
+#
+# 1. Local config file (amimoto_local_config_path, default /opt/local/amimoto.json)
+#    "php": { "version": "8.1" }  -- wins over everything, travels with the AMI.
+# 2. SSM Parameter Store (amimoto_ssm_php_version_parameter) -- central fallback.
+# 3. amimoto_php_version default from defaults/main.yml.
+#
+# Included from preflight.yml; also exercised directly by tests/test_php_version.yml.
+
+- name: Check for local amimoto.json config
+  ansible.builtin.stat:
+    path: "{{ amimoto_local_config_path }}"
+  register: amimoto_local_config_stat
+  tags: [preflight, php_switch]
+
+- name: Load local amimoto.json config
+  ansible.builtin.set_fact:
+    amimoto_local_config: "{{ lookup('file', amimoto_local_config_path) | from_json }}"
+  when: amimoto_local_config_stat.stat.exists
+  tags: [preflight, php_switch]
+
+- name: Set PHP version from amimoto.json when present
+  ansible.builtin.set_fact:
+    amimoto_php_version: "{{ amimoto_local_config.php.version | string }}"
+    amimoto_php_version_from_file: true
+  when:
+    - amimoto_local_config is defined
+    - amimoto_local_config.php is defined
+    - amimoto_local_config.php.version is defined
+    - amimoto_local_config.php.version | string | length > 0
+  tags: [preflight, php_switch]
+
+- name: Fetch PHP version from SSM Parameter Store
+  ansible.builtin.command: >-
+    aws ssm get-parameter
+    --name "{{ amimoto_ssm_php_version_parameter }}"
+    --region "{{ amimoto_ec2_region }}"
+    --query "Parameter.Value"
+    --output text
+  register: amimoto_ssm_php_version_result
+  changed_when: false
+  failed_when: false
+  when:
+    - not (amimoto_php_version_from_file | default(false))
+    - amimoto_ssm_php_version_parameter | length > 0
+    - amimoto_ec2_region | length > 0
+  tags: [preflight, php_switch]
+
+- name: Set PHP version from SSM when available
+  ansible.builtin.set_fact:
+    amimoto_php_version: "{{ amimoto_ssm_php_version_result.stdout | trim }}"
+  when:
+    - not (amimoto_php_version_from_file | default(false))
+    - amimoto_ssm_php_version_result is defined
+    - amimoto_ssm_php_version_result.rc | default(1) == 0
+    - amimoto_ssm_php_version_result.stdout | default('') | trim | length > 0
+  tags: [preflight, php_switch]
+
+- name: Rebuild PHP packages list with updated version
+  ansible.builtin.set_fact:
+    amimoto_php_packages:
+      - "php{{ amimoto_php_version }}"
+      - "php{{ amimoto_php_version }}-common"
+      - "php{{ amimoto_php_version }}-cli"
+      - "php{{ amimoto_php_version }}-fpm"
+      - "php{{ amimoto_php_version }}-mbstring"
+      - "php{{ amimoto_php_version }}-gd"
+      - "php-pear"
+      - "php{{ amimoto_php_version }}-xml"
+      - "php{{ amimoto_php_version }}-soap"
+      - "php{{ amimoto_php_version }}-mysqlnd"
+      - "php{{ amimoto_php_version }}-pdo"
+      - "php{{ amimoto_php_version }}-opcache"
+      - "php{{ amimoto_php_version }}-bcmath"
+      - "php{{ amimoto_php_version }}-intl"
+      - "php{{ amimoto_php_version }}-devel"
+  tags: [preflight, php_switch]
