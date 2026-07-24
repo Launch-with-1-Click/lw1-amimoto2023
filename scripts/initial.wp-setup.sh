@@ -46,7 +46,7 @@ echo "${index_html}" > /var/www/html/index.html
 
 
 ## update Ansible bundle from S3 or GitHub
-ANSIBLE_REPO="https://github.com/amimoto-ami/amimoto-ami2023.git"
+ANSIBLE_REPO="https://github.com/Launch-with-1-Click/lw1-amimoto2023.git"
 
 if [ -d "${ANSIBLE_PATH}/.git" ]; then
   /usr/bin/git -C ${ANSIBLE_PATH} pull origin main || true
