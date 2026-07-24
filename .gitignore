@@ -25,3 +25,6 @@ host_vars/*/vault.yml
 # Local configuration
 .kitchen.local.yml
 ansible.cfg.local
+
+# Tests (development only; not deployed to instances)
+tests/
