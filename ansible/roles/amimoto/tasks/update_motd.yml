@@ -16,3 +16,14 @@
     - 75-system-update
   when: amimoto_update_motd_enabled | bool
   notify: Update motd
+
+# pam_motd shows the static /etc/motd, which update-motd rewrites from the
+# scripts above (the banner reads the PHP version at runtime). A version switch
+# leaves the motd template unchanged, so the notify above does not fire and
+# /etc/motd keeps the old version. Regenerate unconditionally so the banner
+# always matches reality. Tagged php_switch so it also runs on `--tags php_switch`.
+- name: Regenerate /etc/motd so the banner reflects the current PHP version
+  ansible.builtin.command: update-motd
+  changed_when: false
+  when: amimoto_update_motd_enabled | bool
+  tags: [preflight, php_switch]
