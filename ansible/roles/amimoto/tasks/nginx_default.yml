@@ -6,6 +6,8 @@
     owner: root
     group: root
     mode: "0644"
+    # Do not clobber local edits on reboot/provision; only create if missing.
+    force: false
   vars:
     listen: "{{ amimoto_nginx_config_listen }}"
     listen_backend: "{{ amimoto_nginx_config_listen_backend }}"
