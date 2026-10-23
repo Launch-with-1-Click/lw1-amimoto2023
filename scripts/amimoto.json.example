@@ -1,5 +1,8 @@
 {
   "php": {
     "version": "8.1"
+  },
+  "wordpress": {
+    "servername": "example.com"
   }
 }

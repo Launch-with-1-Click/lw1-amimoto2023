@@ -17,6 +17,11 @@ LOCAL_IPV4=$(curl -s -H "${IMDS_HEADER}" http://169.254.169.254/latest/meta-data
 REGION=$(echo ${AZ} | sed -e 's/[a-z]$//')
 
 SERVERNAME=${INSTANCEID}
+# Override the WordPress servername (docroot name) from /opt/local/amimoto.json if present.
+if [ -f /opt/local/amimoto.json ]; then
+  _sn=$(python3 -c "import json;print((json.load(open('/opt/local/amimoto.json')).get('wordpress') or {}).get('servername') or '')" 2>/dev/null || true)
+  [ -n "${_sn}" ] && SERVERNAME="${_sn}"
+fi
 ANSIBLE_PATH="/opt/local/ansible"
 
 ## cleanup and initialize
@@ -70,6 +75,12 @@ REGION=$(echo ${AZ} | sed -e 's/[a-z]$//')
 INSTANCEID=$(curl -s -H "${IMDS_HEADER}" http://169.254.169.254/latest/meta-data/instance-id)
 ANSIBLE_PATH="/opt/local/ansible"
 
+WP_SERVERNAME="${INSTANCEID}"
+if [ -f /opt/local/amimoto.json ]; then
+  _sn=$(python3 -c "import json;print((json.load(open('/opt/local/amimoto.json')).get('wordpress') or {}).get('servername') or '')" 2>/dev/null || true)
+  [ -n "${_sn}" ] && WP_SERVERNAME="${_sn}"
+fi
+
 if [ -d "${ANSIBLE_PATH}/.git" ]; then
   /usr/bin/git -C ${ANSIBLE_PATH} pull origin main || true
 fi
@@ -77,7 +88,7 @@ fi
   -i ${ANSIBLE_PATH}/ansible/inventory/hosts.ini \
   ${ANSIBLE_PATH}/ansible/site.yml \
   -e "amimoto_ec2_region=${REGION}" \
-  -e "amimoto_wordpress_servername=${INSTANCEID}" 2>&1 | tee -a /var/log/amimoto/provision.log
+  -e "amimoto_wordpress_servername=${WP_SERVERNAME}" 2>&1 | tee -a /var/log/amimoto/provision.log
 EOS
 chmod +x /opt/local/provision
 
