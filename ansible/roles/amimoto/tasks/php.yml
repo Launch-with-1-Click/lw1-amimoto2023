@@ -93,10 +93,11 @@
     owner: root
     group: root
     mode: "0644"
-    # Do not clobber local edits on reboot/provision; only create if missing.
-    # Note: php-fpm pm.* tuning from instance_tuning.yml no longer re-applies
-    # to an existing www.conf after this — manage the pool by hand once created.
-    force: false
+    # Reboot/provision preserves local edits (force:no by default). The AMI build
+    # passes amimoto_config_force=true so the correct pool config (socket owner
+    # amimoto-user:www 0666) is baked in, replacing the distro-default www.conf
+    # (listen.acl_users apache,nginx) that would otherwise break the socket.
+    force: "{{ amimoto_config_force | default(false) }}"
   vars:
     listen: "{{ amimoto_php_listen }}"
     user: "{{ amimoto_php_config_user }}"
