@@ -1,12 +1,6 @@
 ---
-# Resolve amimoto_php_version with priority: amimoto.json > SSM > default.
-#
-# 1. Local config file (amimoto_local_config_path, default /opt/local/amimoto.json)
-#    "php": { "version": "8.1" }  -- wins over everything, travels with the AMI.
-# 2. SSM Parameter Store (amimoto_ssm_php_version_parameter) -- central fallback.
-# 3. amimoto_php_version default from defaults/main.yml.
-#
-# Included from preflight.yml; also exercised directly by tests/test_php_version.yml.
+# Resolve amimoto_php_version. Priority: amimoto.json (amimoto_local_config_path)
+# > SSM (amimoto_ssm_php_version_parameter) > the amimoto_php_version default.
 
 - name: Check for local amimoto.json config
   ansible.builtin.stat:

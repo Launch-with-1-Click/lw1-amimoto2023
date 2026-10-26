@@ -6,9 +6,8 @@
     owner: root
     group: root
     mode: "0644"
-    # Reboot/provision preserves local edits (force:no by default). The AMI build
-    # passes amimoto_config_force=true so the correct config is baked in; at first
-    # boot a missing default.conf is created with this instance's docroot.
+    # Default force:no so reboots keep local edits; the AMI build sets
+    # amimoto_config_force=true to apply the correct config at bake time.
     force: "{{ amimoto_config_force | default(false) }}"
   vars:
     listen: "{{ amimoto_nginx_config_listen }}"

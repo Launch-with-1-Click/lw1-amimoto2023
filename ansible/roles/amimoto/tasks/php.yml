@@ -93,10 +93,8 @@
     owner: root
     group: root
     mode: "0644"
-    # Reboot/provision preserves local edits (force:no by default). The AMI build
-    # passes amimoto_config_force=true so the correct pool config (socket owner
-    # amimoto-user:www 0666) is baked in, replacing the distro-default www.conf
-    # (listen.acl_users apache,nginx) that would otherwise break the socket.
+    # Default force:no so reboots keep local edits; the AMI build sets
+    # amimoto_config_force=true to apply the correct pool config at bake time.
     force: "{{ amimoto_config_force | default(false) }}"
   vars:
     listen: "{{ amimoto_php_listen }}"
