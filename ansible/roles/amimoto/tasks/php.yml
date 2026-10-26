@@ -93,6 +93,10 @@
     owner: root
     group: root
     mode: "0644"
+    # Do not clobber local edits on reboot/provision; only create if missing.
+    # Note: php-fpm pm.* tuning from instance_tuning.yml no longer re-applies
+    # to an existing www.conf after this — manage the pool by hand once created.
+    force: false
   vars:
     listen: "{{ amimoto_php_listen }}"
     user: "{{ amimoto_php_config_user }}"
